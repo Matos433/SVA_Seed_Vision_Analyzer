@@ -1,0 +1,96 @@
+# Version 1.0 - Workflow para SVA (Seed Vision Analyzer)
+name: Build SVA Executable and Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Permite execução manual
+
+jobs:
+  build:
+    # Recomendado usar um runner mais rápido ou Windows Server 2022 para performance
+    runs-on: windows-latest
+    permissions:
+      contents: write # Necessário para criar Releases
+
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python 3.11.9
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.11.9'
+
+    - name: 🔎 Extract version from SVA_15.4.py
+      id: extract_version
+      # Busca o valor da variável CURRENT_VERSION dentro do arquivo SVA_15.4.py
+      run: |
+        $version = (Get-Content SVA_15.4.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
+        echo "VERSION=$version" >> $env:GITHUB_ENV
+      shell: powershell
+
+    - name: ⚙️ Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Core: PySide6 (Interface) e OpenCV (Processamento)
+        pip install PySide6 opencv-python numpy
+        # Científico/Estatística: Pandas, Statsmodels, Matplotlib, ReportLab
+        pip install pandas statsmodels matplotlib reportlab
+        # Deep Learning/Gráficos: Ultralytics, pyqtgraph
+        pip install ultralytics pyqtgraph
+        # Empacotamento
+        pip install pyinstaller
+      
+    - name: ⚙️ Adjust recursion limit (Optional, for large apps)
+      run: python -c "import sys; sys.setrecursionlimit(5000)"
+
+    - name: 📦 Build executable with PyInstaller
+      run: |
+        # Main script: SVA_15.4.py
+        # Hidden Imports: Necessários devido ao lazy loading e módulos internos
+        # Assets: icone.ico, logo.png (assumidos na raiz), e a pasta SVA (para o best.pt)
+        pyinstaller --noconfirm --onefile --windowed \
+        --name "SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}" \
+        --icon "icone.ico" \
+        --add-data "icone.ico;." \
+        --add-data "logo.png;." \
+        --add-data "logo2.png;." \
+        --add-data "SVA;SVA" \
+        --hidden-import "matplotlib.backends.backend_qtquick" \
+        --hidden-import "matplotlib.backends.backend_qtagg" \
+        --hidden-import "ultralytics" \
+        "SVA_15.4.py"
+
+    - name: ⬆️ Upload executable artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SVA_v${{ env.VERSION }}
+        path: dist/SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}.exe
+
+    - name: 🏷️ Create GitHub Release Tag
+      id: create_tag
+      run: echo "RELEASE_TAG=v${{ env.VERSION }}" >> $env:GITHUB_ENV
+      shell: powershell
+
+    - name: 🚀 Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.RELEASE_TAG }}
+        name: "Release SVA ${{ env.VERSION }}"
+        body: |
+          Automatic release of Seed Vision Analyzer version ${{ env.VERSION }}.
+          Includes improvements in startup speed and UI corrections.
+        draft: false
+        prerelease: false
+        files: dist/SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}.exe
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+eof
+
+### Onde Colocar o Arquivo
+a
+Você deve salvar este código no seu repositório GitHub, no seguinte caminho:
+
+.github/workflows/python_exe-app.yml

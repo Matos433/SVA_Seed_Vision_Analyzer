@@ -1,6 +1,5 @@
 import sys, os, cv2
 import threading
-from networkx import is_path
 import numpy as np
 import json
 import pickle
@@ -29,49 +28,50 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from io import BytesIO
 import pyqtgraph as pg
+from io import BytesIO
 
-'''# Adiciona o diretório 'SEEDS COUNTER' ao path para permitir a importação do módulo de treinamento
+# Adiciona o diretório 'SVA' ao path para permitir a importação do módulo de treinamento
 current_dir = os.path.dirname(os.path.abspath(__file__))
 seeds_counter_path = os.path.join(current_dir, 'SVA')
 if seeds_counter_path not in sys.path:
-    sys.path.insert(0, seeds_counter_path)'''
+    sys.path.insert(0, seeds_counter_path)
 
-# ----------------------------- INÍCIO DO CÓDIGO DE ATUALIZAÇÃO DO MODELO -------------------------------------
-# -------------------------------- VARIÁVEIS GLOBAIS DE ATUALIZAÇÃO -------------------------------------------
-# Token de Acesso Pessoal (PAT) do GitHub para repositórios privados
-GITHUB_TOKEN = "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"
-# Link do GitHub para o arquivo best.pt (Modelo YOLO)
-# YOLO_MODEL_URL agora aponta para a API de conteúdo do GitHub para o arquivo best.pt
-GITHUB_REPO = "Matos433/SEEDS-COUNTER"
-YOLO_MODEL_PATH = "best.pt" 
+# --- VARIÁVEIS GLOBAIS DE ATUALIZAÇÃO ---
+# ATENÇÃO: REVOGUE ESTE TOKEN.
+GITHUB_TOKEN = "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" 
 
-YOLO_MODEL_URL = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{YOLO_MODEL_PATH}"
-# YOLO_FILE_ID não é mais necessário para o GitHub
+GITHUB_REPO = "Matos433/SVA_Seed_Vision_Analyzer"
 TARGET_FILENAME = "best.pt"
-# Data de referência do modelo YOLO (para comparação com a data do arquivo local )
-TARGET_DATE_STR = "06/11/2025"
+TARGET_DATE_STR = "07/11/2025"
 TARGET_DATE = datetime.strptime(TARGET_DATE_STR, "%d/%m/%Y")
 
-# URL para verificar a versão mais recente do software (simulação )
-SOFTWARE_FILENAME = "2025.15.2.exe" # Nome do arquivo EXE
-# URL para o executável (Release)
-GITHUB_LAUNCHER = "Matos433/SEEDS-COUNTER"
-url = (f"https://api.github.com/repos/{GITHUB_LAUNCHER}/releases/latest")
+SOFTWARE_FILENAME = "SVA_2025.14.1.exe" # Nome do arquivo EXE (Ajuste se necessário)
+GITHUB_LAUNCHER = GITHUB_REPO
 
-SOFTWARE_UPDATE_URL = url # Link base para o executável (Nota: Este link deve apontar para um arquivo, não para uma pasta)
 # URL para a API de Releases do GitHub para obter a última versão
 GITHUB_RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_LAUNCHER}/releases/latest"
-# Versão de referência para comparação (Será atualizada pela API)
-REMOTE_VERSION = "v2025.15.4" 
+
+REMOTE_VERSION = "v2025.1.15" 
 REMOTE_DOWNLOAD_URL = ""
 
+
+# --------------------------------- FUNÇÕES AUXILIARES DE REDE ----------------------------------------------
+
 def is_version_greater(latest_version, current_version):
-    """Compara duas versões e retorna True se a versão mais recente for superior à atual. Adaptado de updates.py para evitar a dependência."""
+    """Compara duas versões e retorna True se a versão mais recente for superior à atual."""
+    
+    # Função de limpeza para remover 'v' ou 'vv' e espaços em branco
+    def clean_version_str(version_str):
+        if not isinstance(version_str, str):
+            return str(version_str)
+        # Remove 'v' ou 'vv' e espaços
+        return version_str.lower().lstrip('v').lstrip('v').strip() 
+
     def parse_version(version_str):
         try:
-            clean_version = version_str.strip()
+            # Usa a função de limpeza antes de dividir
+            clean_version = clean_version_str(version_str)
             parts = []
             for part in clean_version.split("."):
                 numeric_part = "".join(filter(str.isdigit, part))
@@ -82,6 +82,7 @@ def is_version_greater(latest_version, current_version):
             return parts
         except Exception:
             return [0]
+            
     try:
         latest_parts = parse_version(latest_version)
         current_parts = parse_version(current_version)
@@ -97,153 +98,142 @@ def is_version_greater(latest_version, current_version):
                 return False
         return False
     except Exception:
-        return latest_version != current_version
+        # Fallback se a comparação baseada em números falhar (compara strings limpas)
+        return clean_version_str(latest_version) != clean_version_str(current_version)
 
-# (Certifique-se que 'requests' está importado no topo do arquivo)
-import requests
-
-token = "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"
-headers = {
-    "Authorization": f"Bearer {token}","Accept": "application/vnd.github+json"}
-url = "https://api.github.com/repos/Matos433/SEEDS-COUNTER/releases/latest"
-
-r = requests.get(url, headers=headers)
-print(r.json())
-
-def get_latest_version(url):
-    """Busca a última versão e URL de download do GitHub, com log detalhado."""
-    # 1. Verifica as variáveis de entrada
-    print(f"Buscando versão na URL: {url}")
+def get_yolo_asset_url(url):
+    """Busca a URL de download (asset_url) para o best.pt na release mais recente."""
+    print(f"Buscando asset YOLO na URL: {url}")
     if not GITHUB_TOKEN:
         print("ERRO CRÍTICO: GITHUB_TOKEN não está definido no código!")
-        return None, None 
+        return None 
+    
     headers = {
         "Accept": "application/vnd.github.v3+json",
         "Authorization": f"token {GITHUB_TOKEN}"}
-    try:
-        # 2. Faz a requisição
-        response = requests.get(url, headers=headers, timeout=10) # Timeout de 10s
-        # 3. Verifica o status da resposta HTTP
-        print(f"Status da Resposta: {response.status_code}")
-        # Lança um erro para respostas ruins (4xx ou 5xx)
-        response.raise_for_status() 
         
-        # 4. Analisa o JSON
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status() 
         data = response.json()
-        latest_version = data.get('name')  # <-- MUDANÇA AQUI
-        if not latest_version:
-            print("ERRO: 'name' (Nome da Release) não encontrada no JSON da resposta.")
-            print(f"JSON recebido (parcial): {str(data)[:200]}...")
-            return None, None
-            
-        print(f"Release Name (versão) encontrada: {latest_version}")
-
-        # 5. Procura o URL de download (arquivo .exe)
+        
+        # Procura o Asset URL para o best.pt
         download_url = None
         if 'assets' in data and len(data['assets']) > 0:
             for asset in data['assets']:
-                # Ajuste '.exe' se o nome do seu arquivo for outro
-                if asset.get('name', '').endswith('.exe'): 
-
-                    download_url = asset.get('url') # URL da API para o asset. O Downloader usará o token para baixar.
+                if asset.get('name', '') == TARGET_FILENAME: 
+                    download_url = asset.get('url') 
                     break
         
         if not download_url:
-            print("AVISO: Versão encontrada, mas URL de download (.exe) não foi localizada nos 'assets'.")
-            # A função ainda retorna a versão, mas o download pode falhar depois   
-        return latest_version, download_url
+            print(f"AVISO: Arquivo '{TARGET_FILENAME}' não foi localizado nos assets da release.")
+            return None
+            
+        print(f"URL do Asset YOLO encontrada: {download_url}")
+        return download_url
 
-    # --- Bloco de Captura de Erros ---
     except requests.exceptions.HTTPError as http_err:
         print(f"Erro HTTP: {http_err}")
-        if response.status_code == 401:
-            print("ERRO 401: Não autorizado. Verifique se o GITHUB_TOKEN está correto e tem permissão.")
-        elif response.status_code == 404:
-            print("ERRO 404: Não encontrado. Verifique se a GITHUB_RELEASES_API_URL está correta.")
-        elif response.status_code == 403:
-            print("ERRO 403: Proibido. Pode ser limite de taxa (rate limit) da API ou permissão.")
-        # print(f"Resposta completa do erro: {response.text}") # Descomente para mais detalhes   
-    except requests.exceptions.ConnectionError as conn_err:
-        print(f"Erro de Conexão: {conn_err}")
-        print("Verifique sua conexão com a internet.")  
-    except requests.exceptions.Timeout as timeout_err:
-        print(f"Erro de Timeout: {timeout_err}")
-        print("O servidor do GitHub demorou muito para responder.")  
-    except requests.exceptions.RequestException as req_err:
-        print(f"Erro de Requisição (Geral): {req_err}")   
     except Exception as e:
-        # Captura outros erros (ex: falha em response.json() se a resposta não for JSON)
-        print(f"Erro inesperado na função get_latest_version: {e}")
-    # Se qualquer exceção ocorrer, retorna None
-    return None, None
+        print(f"Erro ao buscar asset YOLO: {e}")
+        return None
+
+def get_latest_version(url):
+    """Busca a última versão e a URL de download do executável no GitHub Releases."""
+    if not GITHUB_TOKEN:
+        print("ERRO CRÍTICO: GITHUB_TOKEN não está definido. Acesso à API de Releases falhou.")
+        return "0.0.0", None
+    
+    headers = {
+        "Accept": "application/vnd.github.v3+json",
+        "Authorization": f"token {GITHUB_TOKEN}"}
+        
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # 1. Extrai a versão da tag
+        latest_version = data.get('tag_name', 'v0.0.0').lstrip('v')
+
+        # 2. Procura o Asset URL do executável (.exe)
+        download_url = None
+        exe_asset_name = None
+        if 'assets' in data and len(data['assets']) > 0:
+            for asset in data['assets']:
+                asset_name = asset.get('name', '')
+                if asset_name.endswith(".exe"):
+                    exe_asset_name = asset_name
+                    download_url = asset.get('url') 
+                    break 
+
+        if not download_url:
+            print(f"AVISO: Versão {latest_version} encontrada, mas URL de download (.exe) não foi localizada nos 'assets'.")
+            print(f"DEBUG: Assets disponíveis na Release: {[a.get('name') for a in data.get('assets', [])]}")
+            return latest_version, None
+
+        print(f"DEBUG: Executável encontrado: {exe_asset_name}")
+        return latest_version, download_url
+
+    except requests.exceptions.HTTPError as http_err:
+        print(f"Erro HTTP: {http_err}")
+    except Exception as e:
+        print(f"Erro ao buscar última versão ou assets: {e}")
+        
+    return "0.0.0", None
 
 class Downloader(QThread ):
-    """Classe unificada para gerenciar o download de arquivos do Google Drive em uma thread separada."""
-    finished = Signal(bool, str) # Sinaliza se o download foi bem-sucedido e o caminho do arquivo
+    """Classe unificada para gerenciar o download de arquivos do GitHub em uma thread separada."""
+    finished = Signal(bool, str) 
 
     def __init__(self, url, filepath, parent=None):
         super().__init__(parent)
-        self.url = url # Nova variável para a URL
+        self.url = url 
         self.filepath = filepath
 
     def run(self):
         """Baixa o arquivo da URL fornecida e salva no caminho especificado."""
         try:
-            # --- CORREÇÃO: Usa uma SESSÃO para manter o token durante redirecionamentos ---
             session = requests.Session()
+            
+            # 1. Configura os cabeçalhos para o download de Asset
             session.headers.update({
                 "Authorization": f"token {GITHUB_TOKEN}",
-                "Accept": "application/octet-stream"})
+                "Accept": "application/octet-stream"}) 
             
-            # Verifica se a URL é a URL da API de Conteúdo do GitHub para o best.pt
-            if self.url == YOLO_MODEL_URL:
-                # Se for a URL da API de Conteúdo, precisamos fazer uma requisição para obter a URL de download
-                # O cabeçalho Accept deve ser 'application/vnd.github.v3.raw' para obter o conteúdo binário diretamente
-                session.headers.update({"Accept": "application/vnd.github.v3.raw"})
-                # Faz a requisição para a API de Conteúdo
-                response = session.get(self.url, stream=True, allow_redirects=True)
-                response.raise_for_status() # Verifica se houve erro HTTP
-                
-            else:
-                # Para downloads de assets de release, usa o fluxo original
-                # A sessão (session.get) irá lidar com o redirecionamento 
-                # e manter o cabeçalho de autorização, resolvendo o 404.
-                response = session.get(self.url, stream=True, allow_redirects=True)
-                response.raise_for_status() # Verifica se houve erro HTTP
+            # 2. Faz a requisição na URL do Asset
+            response = session.get(self.url, stream=True, allow_redirects=True) 
+            response.raise_for_status() 
+            
+            # 3. Salva o conteúdo
             self.save_response_content(response)
             self.finished.emit(True, self.filepath)
         except Exception as e:
-            print(f"Download failed: {e}")
+            print(f"Erro ao baixar {self.filepath}: {e}")
             self.finished.emit(False, self.filepath)
+
     def save_response_content(self, response):
-        # Garante que o diretório exista antes de salvar
         os.makedirs(os.path.dirname(self.filepath), exist_ok=True)
         with open(self.filepath, "wb") as f:
-            # response.iter_content já lida com o chunking
             for chunk in response.iter_content(chunk_size=32768):
                 if chunk:
                     f.write(chunk)
 
 class UpdateDialog(QDialog):
     """Janela de diálogo para verificar e gerenciar atualizações."""
-    # Sinal para comunicar o resultado da verificação de versão para a thread principal
     update_signal = Signal(object)
     
     def __init__(self, parent=None, current_version=""):
         super().__init__(parent)
         self.setWindowTitle("Gerenciador de Atualizações")
-        self.setFixedSize(600, 250)
+        self.setFixedSize(750, 300)
         self.current_version = current_version
-        # Corrigido: self.model_path agora aponta para a pasta 'SVA' dentro do diretório do script
-        # O arquivo best.pt deve ser salvo na pasta raiz do programa, que é o diretório do script.
-        # A pasta 'SVA' é usada para a verificação de status, mas o download vai para a raiz.
         self.program_root_path = os.path.dirname(os.path.abspath(__file__))
         self.model_check_path = os.path.join(self.program_root_path, "SVA")
         self.setup_ui()
-        self.downloader = None # Inicializa o downloader
-        # Conecta o sinal ao slot de atualização da UI
+        self.downloader = None 
         self.update_signal.connect(self.update_version_ui)
-        self.check_status() # Chamada para iniciar a verificação de status
+        self.check_status() 
 
     def setup_ui(self):
         main_layout = QVBoxLayout(self)
@@ -255,47 +245,74 @@ class UpdateDialog(QDialog):
         warning_label.setStyleSheet("color: #dc2626; font-size: 11px; padding: 4px; border: 1px solid #fecaca; background-color: #fef2f2; border-radius: 5px;")
         main_layout.addWidget(warning_label)
 
-        # 2. Tabela de Status
+        # --- Tabela com 4 Colunas (Item, Versão/Data, Status, Ação) ---
         self.update_table = QTableWidget()
-        self.update_table.setColumnCount(3)
-        self.update_table.setHorizontalHeaderLabels(["Item", "Status", "Ação"])
+        self.update_table.setColumnCount(4)
+        
+        self.update_table.setHorizontalHeaderLabels(["Item", "Versão/Data", "Status", "Ação"])
         self.update_table.setRowCount(2)
         self.update_table.verticalHeader().setVisible(False)
-        self.update_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.update_table.setColumnWidth(1, 100) # Define a largura da coluna "Status"
-        self.update_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch) # Faz a coluna "Ação" esticar
+        
+        # Ajuste de largura das colunas:
+        self.update_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch) 
+        self.update_table.setColumnWidth(1, 150) 
+        self.update_table.setColumnWidth(2, 100) 
+        self.update_table.setColumnWidth(3, 100) 
+
         self.update_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.update_table.setSelectionMode(QAbstractItemView.NoSelection)
         self.update_table.setRowHeight(0, 40)
         self.update_table.setRowHeight(1, 40)
+        self.update_table.setMinimumHeight(130) 
 
-        # Linha 1: Nova Versão
+        # Linha 1: Nova Versão (Software)
         item_version = QTableWidgetItem("Baixar nova versão do Software")
         item_version.setForeground(QColor(0, 0, 0))
         self.update_table.setItem(0, 0, item_version)
+        
+        # Coluna 1 (Versão/Data): Versão Remota
+        self.version_display = QLabel(self.current_version + " (Local)")
+        self.version_display.setAlignment(Qt.AlignCenter)
+        self.version_display.setStyleSheet("font-weight: bold; color: #1e40af;")
+        self.update_table.setCellWidget(0, 1, self.version_display)
+        
+        # Coluna 2 (Status): Status da Versão
         self.status_version = QLabel("Verificando...")
         self.status_version.setAlignment(Qt.AlignCenter)
-        self.update_table.setCellWidget(0, 1, self.status_version)
+        self.update_table.setCellWidget(0, 2, self.status_version)
+        
+        # Coluna 3 (Ação): Botão Baixar
         self.btn_version = QPushButton("Baixar")
         self.btn_version.setEnabled(False)
         self.btn_version.clicked.connect(self.download_new_version)
         self.btn_version.setMinimumHeight(30)
         self.btn_version.setMinimumWidth(80)
-        self.update_table.setCellWidget(0, 2, self.btn_version)
+        self.update_table.setCellWidget(0, 3, self.btn_version)
 
         # Linha 2: Novo Modelo YOLO
         item_yolo = QTableWidgetItem("Baixar novo modelo YOLO")
         item_yolo.setForeground(QColor(0, 0, 0))
         self.update_table.setItem(1, 0, item_yolo)
+        
+        # Coluna 1 (Versão/Data): Data do Modelo Local
+        self.yolo_date_display = QLabel("Data: Verificando...")
+        self.yolo_date_display.setAlignment(Qt.AlignCenter)
+        self.yolo_date_display.setStyleSheet("color: #475569;")
+        self.update_table.setCellWidget(1, 1, self.yolo_date_display)
+        
+        # Coluna 2 (Status): Status do Modelo
         self.status_yolo = QLabel("Verificando...")
         self.status_yolo.setAlignment(Qt.AlignCenter)
-        self.update_table.setCellWidget(1, 1, self.status_yolo)
+        self.update_table.setCellWidget(1, 2, self.status_yolo)
+        
+        # Coluna 3 (Ação): Botão Baixar
         self.btn_yolo = QPushButton("Baixar")
         self.btn_yolo.setEnabled(False)
         self.btn_yolo.clicked.connect(self.download_new_yolo)
         self.btn_yolo.setMinimumHeight(30)
         self.btn_yolo.setMinimumWidth(80)
-        self.update_table.setCellWidget(1, 2, self.btn_yolo)
+        self.update_table.setCellWidget(1, 3, self.btn_yolo)
+
         main_layout.addWidget(self.update_table)
 
         # 3. Botão Fechar
@@ -323,40 +340,41 @@ class UpdateDialog(QDialog):
         # 1. Status da Versão (Verificação via API em thread separada)
         self.set_status(self.status_version, "Verificando...", "#f59e0b")
         self.btn_version.setEnabled(False)       
-        # Função para ser executada em thread
+        
         def check_software_update():
             global REMOTE_VERSION, REMOTE_DOWNLOAD_URL       
-            # 1. Obtém a versão mais recente e o URL de download
             latest_version, download_url = get_latest_version(GITHUB_RELEASES_API_URL)
             
-            # --- PRINT INSERIDO ---
             print(f"Versão encontrada no GitHub: {latest_version}")
-            # ---------------------
             
-            # 2. Compara as versões
             is_update_available = False
             if latest_version and download_url:
-                is_update_available = is_version_greater(latest_version, self.current_version)
+                # Usa a versão atual limpa (MainWindow.CURRENT_VERSION)
+                current_version_clean = MainWindow.CURRENT_VERSION 
+                is_update_available = is_version_greater(latest_version, current_version_clean)
             
-            # 3. Prepara o resultado para a UI
             result = None
             if is_update_available:
                 result = (latest_version, download_url)
             
-            # Atualiza a UI na thread principal usando o sinal
             self.update_signal.emit(result)
-        # Inicia a thread de verificação
+            
         threading.Thread(target=check_software_update).start()
 
-        # 2. Status do Modelo YOLO
+    # 2. Status do Modelo YOLO
         yolo_path = os.path.join(self.model_check_path, TARGET_FILENAME)
         is_yolo_outdated = True
         
         if os.path.exists(yolo_path):
             file_mod_time = datetime.fromtimestamp(os.path.getmtime(yolo_path))
-            # CORREÇÃO: Compara apenas a data (ignora a hora)
+            yolo_date_str = file_mod_time.strftime("%d/%m/%Y %H:%M")
+            self.yolo_date_display.setText(f"{yolo_date_str}")
+            
             if file_mod_time.date() >= TARGET_DATE.date():
                 is_yolo_outdated = False
+        else:
+            self.yolo_date_display.setText("Modelo não encontrado")
+            
         
         if is_yolo_outdated:
             self.set_status(self.status_yolo, "Desatualizado", "#f97316")
@@ -370,17 +388,20 @@ class UpdateDialog(QDialog):
     def update_version_ui(self, result):
         """Atualiza a interface de usuário da versão após a verificação da thread."""
         global REMOTE_VERSION, REMOTE_DOWNLOAD_URL
+        
         if result and len(result) == 2:
             latest_version, download_url = result
             REMOTE_VERSION = latest_version
-            REMOTE_DOWNLOAD_URL = download_url 
+            REMOTE_DOWNLOAD_URL = download_url
+            
+            self.version_display.setText(f"v{latest_version} (Remota)")
+            self.version_display.setStyleSheet("font-weight: bold; color: #dc2626;")
+            
             self.set_status(self.status_version, "Desatualizado", "#f97316")
             self.btn_version.setEnabled(True)
             self.btn_version.setStyleSheet("QPushButton { background-color: #10b981; color: white; border: none; } QPushButton:hover { background-color: #059669; }")
         else:
-            # Se o resultado for None, significa que está atualizado ou houve erro
-            # Vamos verificar se houve erro de conexão
-            if REMOTE_VERSION == "0.0.0": # Versão inicial, pode indicar falha na comunicação
+            if REMOTE_VERSION == "0.0.0": 
                 self.set_status(self.status_version, "Erro/Atualizado", "#dc2626")
                 self.btn_version.setEnabled(False)
             else:
@@ -403,52 +424,19 @@ class UpdateDialog(QDialog):
         msg_box.setWindowTitle("Atualização de Software")
         msg_box.setText(f"Uma nova versão do software está disponível!\n\nSua versão: {self.current_version}\nÚltima versão: {REMOTE_VERSION}\n\nO download do arquivo '{SOFTWARE_FILENAME}' será iniciado.")
         msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg_box.setStyleSheet("QMessageBox { background-color: #1e293b; color: white; } QPushButton { background-color: #4b5563; color: white; border: none; padding: 8px 20px; border-radius: 5px; } QPushButton:hover { background-color: #374151; }")
+        
+        light_msg_box_style = """
+            QMessageBox { background-color: #ffffff; }
+            QLabel { color: #000000; }
+            QPushButton { background-color: #4b5563; color: white; border: none; padding: 8px 20px; border-radius: 5px; }
+            QPushButton:hover { background-color: #374151; }
+        """
+        msg_box.setStyleSheet(light_msg_box_style)
         msg_box.exec()
 
-        # Caminho de destino: SVA/2025.15.exe
         target_dir = os.path.join(self.program_root_path, "SVA")
         target_path = os.path.join(target_dir, SOFTWARE_FILENAME)
         
-        # O download agora usa a URL obtida da API
-        self.start_download(REMOTE_DOWNLOAD_URL, target_path, self.status_version, self.btn_version)
-
-    def start_download(self, url, file_path, status_label, button):
-        # A verificação de status continua usando o caminho original (SVA/best.pt)
-        yolo_path = os.path.join(self.model_check_path, TARGET_FILENAME)
-        is_yolo_outdated = True
-        
-        if os.path.exists(yolo_path):
-            file_mod_time = datetime.fromtimestamp(os.path.getmtime(yolo_path))
-            # CORREÇÃO: Compara apenas a data (ignora a hora)
-            if file_mod_time.date() >= TARGET_DATE.date():
-                is_yolo_outdated = False
-        
-        if is_yolo_outdated:
-            self.set_status(self.status_yolo, "Desatualizado", "#f97316")
-            self.btn_yolo.setEnabled(True)
-            self.btn_yolo.setStyleSheet("QPushButton { background-color: #10b981; color: white; border: none; } QPushButton:hover { background-color: #059669; }")
-        else:
-            self.set_status(self.status_yolo, "Atualizado", "#3b82f6")
-            self.btn_yolo.setEnabled(False)
-            self.btn_yolo.setStyleSheet("QPushButton { background-color: #e2e8f0; color: #475569; border: none; }")
-
-    def set_status(self, label, text, color):
-        label.setText(text)
-        label.setStyleSheet(f"background-color: transparent; color: {color}; border: 2px solid {color}; border-radius: 5px; padding: 5px 8px; font-size: 10px; font-weight: bold;")
-
-    def download_new_version(self):
-        """Inicia o download do novo executável do GitHub."""
-        msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("Atualização de Software")
-        msg_box.setText(f"Uma nova versão do software está disponível!\n\nSua versão: {self.current_version}\nÚltima versão: {REMOTE_VERSION}\n\nO download do arquivo '{SOFTWARE_FILENAME}' será iniciado.")
-        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-        msg_box.setStyleSheet("QMessageBox { background-color: #1e293b; color: white; } QPushButton { background-color: #4b5563; color: white; border: none; padding: 8px 20px; border-radius: 5px; } QPushButton:hover { background-color: #374151; }")
-        msg_box.exec()
-        # Caminho de destino: SVA/SVA_2025.15.exe
-        target_dir = os.path.join(self.program_root_path, "SVA")
-        target_path = os.path.join(target_dir, SOFTWARE_FILENAME) 
-        # O download agora usa a URL obtida da API
         self.start_download(REMOTE_DOWNLOAD_URL, target_path, self.status_version, self.btn_version)
 
     def start_download(self, url, file_path, status_label, button):
@@ -457,7 +445,6 @@ class UpdateDialog(QDialog):
             QMessageBox.warning(self, "Download em Andamento", "Um download já está em andamento. Por favor, aguarde.")
             return
 
-        # Agora passamos a URL em vez do file_id
         self.downloader = Downloader(url, file_path, self)
         self.downloader.finished.connect(lambda success, path: self.download_finished(success, path, status_label, button))
         self.downloader.start()
@@ -466,34 +453,16 @@ class UpdateDialog(QDialog):
 
     def download_finished(self, success, file_path, status_label, button):
         """Slot unificado para lidar com o fim do download."""
-        button.setEnabled(True) # Reabilita o botão em caso de falha
+        button.setEnabled(True) 
         
-        # --- ESTILO ADICIONADO ---
-        # Define o estilo "claro" (fundo branco, texto preto)
         light_msg_box_style = """
-            QMessageBox {
-                background-color: #ffffff; /* Fundo branco */
-            }
-            QLabel { /* Garante que os labels dentro da caixa sejam pretos */
-                color: #000000;
-            }
-            QPushButton { 
-                background-color: #4b5563; 
-                color: white; 
-                border: none; 
-                padding: 8px 20px; 
-                border-radius: 5px; 
-            }
-            QPushButton:hover { 
-                background-color: #374151; 
-            }
+            QMessageBox { background-color: #ffffff; }
+            QLabel { color: #000000; }
+            QPushButton { background-color: #4b5563; color: white; border: none; padding: 8px 20px; border-radius: 5px; }
+            QPushButton:hover { background-color: #374151; }
         """
-        # ----------------------------------------------------------------------------------------------------------------
         
         if success:
-            # Download concluído com sucesso
-            # --- MUDANÇA: de static para instance + setStyleSheet ---
-            # Original: QMessageBox.information(self, "Sucesso", f"Download concluído com sucesso em:\n{file_path}")
             msg_sucesso = QMessageBox(self)
             msg_sucesso.setWindowTitle("Sucesso")
             msg_sucesso.setIcon(QMessageBox.Information)
@@ -501,18 +470,12 @@ class UpdateDialog(QDialog):
             msg_sucesso.setStandardButtons(QMessageBox.Ok)
             msg_sucesso.setStyleSheet(light_msg_box_style)
             msg_sucesso.exec()
-            # --- FIM DA MUDANÇA ---
 
             self.set_status(status_label, "Atualizado", "#3b82f6")
-            # Se for o best.pt, re-verifica o status para desabilitar o botão de download
             if os.path.basename(file_path) == TARGET_FILENAME:
                 self.check_status()
             
-            # Se for o executável, o usuário pode precisar reiniciar o programa
             if os.path.basename(file_path) == SOFTWARE_FILENAME:
-                
-                # --- MUDANÇA: de static para instance + setStyleSheet ---
-                # Original: QMessageBox.information(self, "Reinicialização Necessária", "O novo executável foi baixado. Por favor, feche o programa atual e execute o novo arquivo.")
                 msg_reiniciar = QMessageBox(self)
                 msg_reiniciar.setWindowTitle("Reinicialização Necessária")
                 msg_reiniciar.setIcon(QMessageBox.Information)
@@ -520,22 +483,17 @@ class UpdateDialog(QDialog):
                 msg_reiniciar.setStandardButtons(QMessageBox.Ok)
                 msg_reiniciar.setStyleSheet(light_msg_box_style)
                 msg_reiniciar.exec()
-                # --- FIM DA MUDANÇA ---
                 
                 self.set_status(status_label, "Baixado", "#3b82f6")
-                button.setEnabled(False) # Desabilita o botão após o download do EXE
+                button.setEnabled(False)
         else:
-            # Falha no download
-            # --- MUDANÇA: de static para instance + setStyleSheet ---
-            # Original: QMessageBox.critical(self, "Erro de Download", f"Falha ao baixar o arquivo.")
             msg_falha = QMessageBox(self)
             msg_falha.setWindowTitle("Erro de Download")
             msg_falha.setIcon(QMessageBox.Critical)
-            msg_falha.setText(f"Falha ao baixar o arquivo.")
+            msg_falha.setText(f"Falha ao baixar o arquivo. Verifique o console para mais detalhes.")
             msg_falha.setStandardButtons(QMessageBox.Ok)
-            msg_falha.setStyleSheet(light_msg_box_style) # Também aplica o estilo claro em caso de erro
+            msg_falha.setStyleSheet(light_msg_box_style) 
             msg_falha.exec()
-            # --- FIM DA MUDANÇA ---
             
             self.set_status(status_label, "Falhou", "#dc2626")
             button.setEnabled(True)
@@ -543,29 +501,39 @@ class UpdateDialog(QDialog):
     def download_new_yolo(self):
         """Inicia o download do novo modelo YOLO (best.pt) do GitHub."""
         
-        # --- CORREÇÃO 1: O local de salvamento deve ser /SVA/ ---
-        # (O seu código original estava salvando em /SVA/Treinamento/runs/weights/)
+        # 1. Busca a URL do Asset do best.pt (Usando a API de Releases)
+        yolo_asset_url = get_yolo_asset_url(GITHUB_RELEASES_API_URL)
+        
+        if not yolo_asset_url:
+            QMessageBox.critical(self, "Erro de Download", 
+                                 "Não foi possível encontrar a URL do arquivo best.pt na Release mais recente. "
+                                 "Verifique se o token é válido e se o arquivo 'best.pt' foi anexado como Asset na Release do repositório.")
+            return
+
+        # 2. Define o caminho de salvamento (dentro da pasta SVA)
         target_dir = os.path.join(self.program_root_path, "SVA")
+        os.makedirs(target_dir, exist_ok=True) 
         target_path = os.path.join(target_dir, TARGET_FILENAME)
         
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("Atualização de Modelo")
         msg_box.setText(f"Deseja baixar a versão mais recente do modelo YOLO ({TARGET_FILENAME})?")
+        
+        light_msg_box_style = """
+            QMessageBox { background-color: #ffffff; }
+            QLabel { color: #000000; }
+            QPushButton { background-color: #4b5563; color: white; border: none; padding: 8px 20px; border-radius: 5px; }
+            QPushButton:hover { background-color: #374151; }
+        """
+        msg_box.setStyleSheet(light_msg_box_style)
         msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
-        msg_box.setStyleSheet("QMessageBox { background-color: #1e293b; color: white; } QPushButton { background-color: #4b5563; color: white; border: none; padding: 8px 20px; border-radius: 5px; } QPushButton:hover { background-color: #374151; }")
         
         if msg_box.exec() == QMessageBox.StandardButton.Yes:
             
-            # --- CORREÇÃO 2: Revertido para 4 argumentos ---
-            # (Remove o 'progress_bar_yolo' que eu adicionei por engano)
-            # A classe Downloader (linha 155) já cuida da autenticação sozinha.
-            self.start_download(YOLO_MODEL_URL, target_path, self.status_yolo, self.btn_yolo)
+            # 3. Inicia o download usando a URL do Asset
+            self.start_download(yolo_asset_url, target_path, self.status_yolo, self.btn_yolo)
 
-# ... (O restante do seu código original segue aqui)
-# Como o arquivo original era muito grande, o restante do código foi omitido para economizar espaço,
-# mas ele está intacto no arquivo que você enviou.
-
-# ... (O restante do seu código original segue aqui)
+# ... (Restante do código original segue aqui)
 import base64
 
 def resource_path(relative_path):
@@ -2196,13 +2164,14 @@ class CalibrationWidget(QWidget):
 
 class MainWindow(QWidget):
     """Janela principal do aplicativo Detector de Sementes."""
-    CURRENT_VERSION = REMOTE_VERSION #"v2025.14"
+    # CORREÇÃO CRÍTICA: Define a versão atual do software como string limpa (sem 'v')
+    # Use a versão real do seu executável aqui! Exemplo: "2025.1.14"
+    CURRENT_VERSION = "v2025.1.14" 
 
     def __init__(self, initial_data=None):
         super().__init__()
-        self.initial_data = initial_data # Armazena os dados recebidos
+        self.initial_data = initial_data 
         self.setWindowTitle("SEED VISION ANALYSER - Desenvolvido por TSM Soluções Agrícolas")
-        
         icon_path = resource_path("icone.ico")
         self.setWindowIcon(QIcon(icon_path))
 
