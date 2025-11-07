@@ -88,10 +88,3 @@ jobs:
         files: dist/SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-eof
-
-### Onde Colocar o Arquivo
-a
-Você deve salvar este código no seu repositório GitHub, no seguinte caminho:
-
-.github/workflows/python_exe-app.yml
