@@ -1,0 +1,9 @@
+id,datetime,video_path,seed_type,planting_speed,seeds_per_meter,total_seeds,aceitavel,falha,multipla
+1,04/11/2025 15:59,C:/Programacao_Talisson/Id_seeds_2/PROGRAMA_SEEDS_COUNTER_V1.0/SOJA_CURVO_B_5KMH_1.mp4,Milho,1,14,6,4,1,1
+2,07/11/2025 09:05,C:/Programacao_Talisson/Id_seeds_2/SEEDS-COUNTER/SEEDS COUNTER/VIDEO_04_10/SOJA_7kmh/Cond_Curv_A/SOJA_TUBO_A_7KMH_1.mp4,Soja,1,14,38,14,10,9
+2,07/11/2025 09:18,C:/Programacao_Talisson/Id_seeds_2/SEEDS-COUNTER/SEEDS COUNTER/VIDEO_04_10/SOJA_7kmh/Cond_Curv_A/SOJA_TUBO_A_7KMH_1.mp4,Milho,1,14,16,2,4,9
+2,07/11/2025 10:41,C:/Programacao_Talisson/Id_seeds_2/SEEDS-COUNTER/SEEDS COUNTER/VIDEO_04_10/SOJA_7kmh/Cond_Curv_A/SOJA_TUBO_A_7KMH_1.mp4,Milho,1,14,15,3,5,6
+2,07/11/2025 10:56,C:/Programacao_Talisson/Id_seeds_2/SEEDS-COUNTER/SEEDS COUNTER/VIDEO_04_10/SOJA_7kmh/Cond_Curv_A/SOJA_TUBO_A_7KMH_1.mp4,Milho,1,14,25,7,6,10
+2,07/11/2025 13:44,C:/Programacao_Talisson/Id_seeds_2/SEEDS-COUNTER/SEEDS COUNTER/VIDEO_04_10/SOJA_7kmh/Cond_Curv_A/SOJA_TUBO_A_7KMH_1.mp4,Soja,1,14,21,4,4,11
+2,07/11/2025 13:53,C:/Programacao_Talisson/Id_seeds_2/SEEDS-COUNTER/SEEDS COUNTER/VIDEO_04_10/SOJA_7kmh/Cond_Curv_A/SOJA_TUBO_A_7KMH_1.mp4,Milho,1,14,21,4,5,10
+2,07/11/2025 14:15,C:/Programacao_Talisson/Id_seeds_2/SEEDS-COUNTER/SEEDS COUNTER/VIDEO_04_10/SOJA_7kmh/Cond_Curv_A/SOJA_TUBO_A_7KMH_1.mp4,Milho,1,14,42,13,10,15
