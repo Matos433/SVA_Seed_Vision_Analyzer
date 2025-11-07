@@ -8,8 +8,6 @@ on:
 
 jobs:
   build:
-jobs:
-  build:
     # Recomendado usar um runner mais rápido ou Windows Server 2022 para performance
     runs-on: windows-latest
     permissions:
