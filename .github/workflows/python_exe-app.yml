@@ -1,3 +1,4 @@
+# Version 1.0 - Workflow para SVA (Seed Vision Analyzer)
 name: Build SVA Executable and Release
 
 on:
@@ -22,11 +23,12 @@ jobs:
       with:
         python-version: '3.11.9'
 
-    - name: 🔎 Extract version from SVA_15.4.py
+    - name: 🔎 Extract version from SVA_15.5.py
       id: extract_version
-      # Busca o valor da variável CURRENT_VERSION dentro do arquivo SVA_15.4.py
+      # Busca o valor da variável CURRENT_VERSION dentro do arquivo SVA_15.5.py
+      # ATENÇÃO: Ajustado para o nome do seu arquivo mais recente
       run: |
-        $version = (Get-Content SVA_15.4.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
+        $version = (Get-Content SVA_15.5.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
         echo "VERSION=$version" >> $env:GITHUB_ENV
       shell: powershell
 
@@ -37,18 +39,24 @@ jobs:
         pip install PySide6 opencv-python numpy
         # Científico/Estatística: Pandas, Statsmodels, Matplotlib, ReportLab
         pip install pandas statsmodels matplotlib reportlab
-        # Deep Learning/Gráficos: Ultralytics, pyqtgraph
-        pip install ultralytics pyqtgraph
+        pip install pyqtgraph
         # Empacotamento
         pip install pyinstaller
+        # Instala YOLOv8 com versão específica para PyInstaller
+        pip install ultralytics==8.0.22 --no-deps 
       
     - name: ⚙️ Adjust recursion limit (Optional, for large apps)
       run: python -c "import sys; sys.setrecursionlimit(5000)"
 
+    # Linha 60 (Início do bloco 'Build executable with PyInstaller')
     - name: 📦 Build executable with PyInstaller
       run: |
-        pyinstaller --noconfirm --onefile --windowed `
-        --name "SVA_${{ env.VERSION }}" `
+        # YOLOv8 requer esta correção para funcionar
+        pip install ultralytics==8.0.22 --no-deps # Instala YOLOv8 com versão correta (sem dependências)
+
+        # CORREÇÃO DE OTIMIZAÇÃO: Adicionado --clean e --strip
+        pyinstaller --noconfirm --onefile --windowed --clean --strip `
+        --name "SVA_${{ env.VERSION }}.exe" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
         --add-data "logo.png;." `
@@ -57,29 +65,31 @@ jobs:
         --hidden-import "matplotlib.backends.backend_qtquick" `
         --hidden-import "matplotlib.backends.backend_qtagg" `
         --hidden-import "ultralytics" `
-        "SVA_15.4.py"
+        "SVA_15.5.py"
 
     - name: ⬆️ Upload executable artifact
       uses: actions/upload-artifact@v4
       with:
-        name: SVA_${{ env.VERSION }}
+        name: SVA_v${{ env.VERSION }}
+        # CORREÇÃO: Caminho do arquivo usa o nome dinâmico
         path: dist/SVA_${{ env.VERSION }}.exe
 
     - name: 🏷️ Create GitHub Release Tag
       id: create_tag
-      run: echo "RELEASE_TAG=${{ env.VERSION }}" >> $env:GITHUB_ENV
+      run: echo "RELEASE_TAG=v${{ env.VERSION }}" >> $env:GITHUB_ENV
       shell: powershell
 
     - name: 🚀 Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.RELEASE_TAG }}
-        name: "${{ env.VERSION }}"
+        name: "Release SVA ${{ env.VERSION }}"
         body: |
           Automatic release of Seed Vision Analyzer version ${{ env.VERSION }}.
           Includes improvements in startup speed and UI corrections.
         draft: false
         prerelease: false
+        # CORREÇÃO CRÍTICA: Adiciona o best.pt na Release junto com o EXE
         files: |
           dist/SVA_${{ env.VERSION }}.exe
           SVA/best.pt

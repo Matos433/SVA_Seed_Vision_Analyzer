@@ -32,14 +32,7 @@ import matplotlib.patches as patches
 import pyqtgraph as pg
 from io import BytesIO
 
-'''# Adiciona o diretório 'SVA' ao path para permitir a importação do módulo de treinamento
-current_dir = os.path.dirname(os.path.abspath(__file__))
-seeds_counter_path = os.path.join(current_dir, 'SVA')
-if seeds_counter_path not in sys.path:
-    sys.path.insert(0, seeds_counter_path)'''
-
 # --- INÍCIO DAS NOVAS DEFINIÇÕES DE CAMINHO ---
-
 # Determina o diretório base (funciona tanto para .py quanto para .exe compilado)
 if getattr(sys, 'frozen', False):
     # Estamos rodando em um .exe compilado
@@ -57,10 +50,6 @@ print(f"DEBUG: Diretório de Downloads (DOWNLOAD_DIR) definido como: {DOWNLOAD_D
 
 # --- FIM DAS NOVAS DEFINIÇÕES DE CAMINHO ---
 
-# --- VARIÁVEIS GLOBAIS DE ATUALIZAÇÃO ---
-# ATENÇÃO: REVOGUE ESTE TOKEN.
-#GITHUB_TOKEN = "#2025_#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" 
-
 # Carrega o token de uma variável de ambiente. Se não existir, fica None.
 GITHUB_TOKEN = os.environ.get("SVA_GITHUB_TOKEN")
 
@@ -68,16 +57,19 @@ GITHUB_REPO = "Matos433/SVA_Seed_Vision_Analyzer"
 TARGET_FILENAME = "best.pt"
 TARGET_DATE_STR = "08/11/2025"
 TARGET_DATE = datetime.strptime(TARGET_DATE_STR, "%d/%m/%Y")
-
-SOFTWARE_FILENAME = "SVA_2025.14.1.exe" # Nome do arquivo EXE (Ajuste se necessário)
 GITHUB_LAUNCHER = GITHUB_REPO
 
 # URL para a API de Releases do GitHub para obter a última versão
 GITHUB_RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_LAUNCHER}/releases/latest"
 
-REMOTE_VERSION = "v2025.1.15" 
-REMOTE_DOWNLOAD_URL = ""
 
+
+# --- NOVO: VARIÁVEL GLOBAL DE VERSÃO (SSOT) ---
+CURRENT_VERSION = "v2025.1.17" 
+SOFTWARE_FILENAME = f"SVA_{CURRENT_VERSION}.exe"
+# --- FIM NOVO ---
+REMOTE_VERSION = "v2025.1.18" #f"{CURRENT_VERSION}" 
+REMOTE_DOWNLOAD_URL = ""
 
 # --------------------------------- FUNÇÕES AUXILIARES DE REDE ----------------------------------------------
 
@@ -139,42 +131,6 @@ def get_yolo_asset_url(url):
     else:
         print("AVISO: GITHUB_TOKEN não definido. Usando API pública (pode ter limite de taxa).")
         
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        response.raise_for_status() 
-        data = response.json()
-        
-        # Procura o Asset URL para o best.pt
-        download_url = None
-        if 'assets' in data and len(data['assets']) > 0:
-            for asset in data['assets']:
-                if asset.get('name', '') == TARGET_FILENAME: 
-                    download_url = asset.get('url') 
-                    break
-        
-        if not download_url:
-            print(f"AVISO: Arquivo '{TARGET_FILENAME}' não foi localizado nos assets da release.")
-            return None
-            
-        print(f"URL do Asset YOLO encontrada: {download_url}")
-        return download_url
-
-    except requests.exceptions.HTTPError as http_err:
-        print(f"Erro HTTP: {http_err}")
-    except Exception as e:
-        print(f"Erro ao buscar asset YOLO: {e}")
-        return None
-    
-    """Busca a URL do asset 'best.pt' na release mais recente do GitHub."""
-    headers = {"Accept": "application/vnd.github.v3+json"}
-
-    # Adiciona o token APENAS SE ele existir
-    if GITHUB_TOKEN:
-        print("Usando token de autenticação para a API.")
-        headers["Authorization"] = f"token {GITHUB_TOKEN}"
-    else:
-        print("AVISO: GITHUB_TOKEN não definido. Usando API pública...")
-
     try:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status() 
@@ -423,7 +379,7 @@ class UpdateDialog(QDialog):
             is_update_available = False
             if latest_version and download_url:
                 # Usa a versão atual limpa (MainWindow.CURRENT_VERSION)
-                current_version_clean = MainWindow.CURRENT_VERSION 
+                current_version_clean = CURRENT_VERSION 
                 is_update_available = is_version_greater(latest_version, current_version_clean)
             
             result = None
@@ -779,7 +735,7 @@ class SplashScreen(QWidget):
         self.title_label.setGraphicsEffect(text_shadow)
         main_layout.addWidget(self.title_label)
 
-        self.version_label = QLabel(f"By TSM Soluções Agrícolas - {MainWindow.CURRENT_VERSION}")
+        self.version_label = QLabel(f"By TSM Soluções Agrícolas - {CURRENT_VERSION}")
         self.version_label.setAlignment(Qt.AlignCenter)
         self.version_label.setStyleSheet("color: #070807; font-size: 15px; background: transparent; margin-top: -1px;")
         main_layout.addWidget(self.version_label)
@@ -794,6 +750,7 @@ class SpeedRulerWidget(QWidget):
         super().__init__(parent)
         self.setMinimumSize(200, 60)
         self.setFixedHeight(60)
+        self.margin = 15  # Define a margem aqui (ex: 20 pixels)
         self.speeds = [0.10, 1.0, 5.0, 10.0]
         self.current_index = 1
         self.setMouseTracking(True)
@@ -804,13 +761,13 @@ class SpeedRulerWidget(QWidget):
         painter.fillRect(self.rect(), QColor("#ffffff"))
         pen = QPen(QColor("#2e2e2e"), 2)
         painter.setPen(pen)
-        line_y = self.height() // 2 - 20
-        painter.drawLine(10, line_y, self.width() - 10, line_y)
+        line_y = self.height() // 2 - 15 # Ajusta a posição Y da linha
+        painter.drawLine(self.margin, line_y, self.width() - self.margin, line_y)
         font = QFont("Segoe UI", 8)
         painter.setFont(font)
         num_speeds = len(self.speeds)
         for i, speed in enumerate(self.speeds):
-            x_pos = 10 + i * (self.width() - 20) / (num_speeds - 1)
+            x_pos = self.margin + i * (self.width() - 2 * self.margin) / (num_speeds - 1)
             if i == self.current_index:
                 painter.setBrush(QColor("#3b82f6"))
                 painter.setPen(Qt.NoPen)
@@ -826,7 +783,8 @@ class SpeedRulerWidget(QWidget):
             painter.drawText(int(x_pos) - 15, line_y + 15, 30, 15, Qt.AlignCenter, f"{speed}x")
 
     def mousePressEvent(self, event):
-        self.update_value(event.pos().x())
+        # CORREÇÃO: Muda de event.pos().x() para event.position().x()
+        self.update_value(event.position().x())
 
     def update_value(self, x_pos):
         num_speeds = len(self.speeds)
@@ -1015,7 +973,7 @@ class SetupDialog(QDialog):
         #left_layout.addWidget(title_label)
 
         # --- NOVO: Adiciona o texto de versão abaixo do título ---
-        version_text = f"Software de Visão Computacional {MainWindow.CURRENT_VERSION}\nBy TSM Soluções Agrícolas"
+        version_text = f"Software de Visão Computacional {CURRENT_VERSION}\nBy TSM Soluções Agrícolas"
         version_label = QLabel(version_text)
         version_label.setAlignment(Qt.AlignCenter)
         version_label.setObjectName("versionLabel")
@@ -1176,6 +1134,7 @@ class SetupDialog(QDialog):
         # --- CORREÇÃO: Ajusta a proporção do layout principal ---
         main_layout.addLayout(right_v_layout, 3) # Proporção 3 para o lado direito (mais espaço)
 
+        # Linha 1279 (Substitua todo o bloco de estilo setStyleSheet)
         # Estilo
         self.setStyleSheet("""
             QDialog { background-color: #f8fafc; }
@@ -1187,15 +1146,16 @@ class SetupDialog(QDialog):
                 padding: 15px;
             }
             QGroupBox::title {
-                color: black;
+                color: #1e40af; /* Título padrão AZUL */
                 font-weight: bold;
-                subcontrol-origin: margin; /* Origem do subcontrole */
-                subcontrol-position: top left; /* Posição do título */
-                padding: 0 5px; /* Espaçamento interno */
-                left: 10px; /* Deslocamento da borda esquerda */
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                padding: 0 5px;
+                left: 10px;
             }
             QGroupBox#ProjectsGroup::title {
                 font-size: 9pt; /* Tamanho de fonte menor para "Projetos Recentes" */
+                color: #1e40af; /* Garante que Projetos Recentes seja AZUL */
             }
             QLabel { 
                 color: black; 
@@ -1210,6 +1170,7 @@ class SetupDialog(QDialog):
                 font-size: 24px;
                 font-weight: bold;
                 color: black;
+                margin-bottom: 10px
             }
             QLabel#versionLabel {
                 color: #64748b;
@@ -1235,8 +1196,26 @@ class SetupDialog(QDialog):
                 border: none;
             }
             QPushButton:hover { background-color: #15803d; }
+            
+            /* --- CORREÇÃO DA TABELA DE PROJETOS --- */
+            QTableWidget {
+                border: 1px solid #e2e8f0;
+            }
+            QHeaderView::section {
+                /* CORREÇÃO: Fundo da célula AZUL */
+                background-color: #f0f2f7; 
+                /* CORREÇÃO: Texto do cabeçalho BRANCO */
+                color: black; 
+                border: 1px solid #f0f2f7;
+                font-size: 9pt 
+                padding: 4px;
+                font-weight: bold;
+            }
+            QTableWidget::item:selected {
+                background-color: #dbeafe;
+                color: #1e3a8a;
+            }
         """)
-
     def get_data(self):
         """Retorna os dados preenchidos no formulário."""
         if not all([self.email_input.text(), self.test_name_input.text(), 
@@ -2309,9 +2288,6 @@ class CalibrationWidget(QWidget):
 
 class MainWindow(QWidget):
     """Janela principal do aplicativo Detector de Sementes."""
-    # CORREÇÃO CRÍTICA: Define a versão atual do software como string limpa (sem 'v')
-    # Use a versão real do seu executável aqui! Exemplo: "2025.1.14"
-    CURRENT_VERSION = "v2025.1.16" 
 
     def __init__(self, initial_data=None):
         super().__init__()
@@ -2670,7 +2646,7 @@ class MainWindow(QWidget):
         top_bar_layout.setSpacing(10)
         top_bar_layout.setAlignment(Qt.AlignLeft)
 
-        app_title = QLabel(f"Software de Visão Computacional {self.CURRENT_VERSION}")
+        app_title = QLabel(f"Software de Visão Computacional {CURRENT_VERSION}")
         app_title.setFont(QFont("Segoe UI", 12, QFont.Bold))
         app_title.setStyleSheet("color: #1e293b; padding-left: 5px;")
         top_bar_layout.addWidget(app_title)
@@ -3282,10 +3258,12 @@ class MainWindow(QWidget):
         adjustments_layout.addWidget(sat_widget) # <-- CORREÇÃO: addWidget, pois sat_widget é um QWidget
 
         # --- FIM DO CÓDIGO DOS SLIDERS ---
+        # Linha 3362 (Substitua este bloco de código)
         bottom_controls_layout = QHBoxLayout()
-        bottom_controls_layout.setContentsMargins(0, 10, 20, 0)
+        bottom_controls_layout.setContentsMargins(0, 10, 30, 0) # CORREÇÃO: Aumenta a margem direita para 30
         bottom_controls_layout.addLayout(adjustments_layout)
         bottom_controls_layout.addStretch(1)
+        
         self.speed_ruler = SpeedRulerWidget()
         self.speed_ruler.setValue(3)
         self.speed_ruler.valueChanged.connect(self.set_playback_speed)
@@ -3509,7 +3487,7 @@ class MainWindow(QWidget):
 
         row, col = 0, 0
         for analysis_data in self.analysis_results:
-            card = AnalysisCard(analysis_data, analysis_data['id'], f"{self.CURRENT_VERSION}")
+            card = AnalysisCard(analysis_data, analysis_data['id'], f"{CURRENT_VERSION}")
             card.close_requested.connect(self.remove_analysis)
             card.notes_updated.connect(self.update_analysis_notes) # Conecta o novo sinal
             self.reports_grid_layout.addWidget(card, row, col)
@@ -3652,7 +3630,7 @@ class MainWindow(QWidget):
                 
                 story = []
                 for i, analysis_data in enumerate(self.analysis_results):
-                    card = AnalysisCard(analysis_data, analysis_data['id'], f"{self.CURRENT_VERSION}")
+                    card = AnalysisCard(analysis_data, analysis_data['id'], f"{CURRENT_VERSION}")
                     story.extend(card.get_pdf_story_elements(styles))
                     if i < len(self.analysis_results) - 1:
                         story.append(PageBreak())
@@ -4521,11 +4499,14 @@ class MainWindow(QWidget):
         self.pause_btn.setEnabled(False)
         self.save_analysis_btn.setEnabled(True)
 
-    def save_and_pause_analysis(self, reset_counters=False, is_auto_save=False):
+    # Linha 3496 (Substitua a função completa)
+
+    def save_and_pause_analysis(self, is_auto_save=False):
         """Salva a análise atual e pausa o vídeo, lendo os dados atuais da interface."""
         if not self.cap or not self.cap.isOpened() or (not self.playing and not self.pause_flag):
             return
         
+        # Pausa o vídeo imediatamente, mas não reseta os contadores ainda.
         self._stop_playing_internal()
 
         if self.total_seeds_detected > 0:
@@ -4534,7 +4515,7 @@ class MainWindow(QWidget):
                 _, buffer = cv2.imencode('.png', self.current_frame)
                 final_frame_base64 = base64.b64encode(buffer).decode('utf-8')
 
-            # --- CORREÇÃO: Captura os valores atuais diretamente da interface ---
+            # --- Captura os valores atuais diretamente da interface ---
             current_seed_type = self.seed_type_combo.currentText()
             current_tube_type = self.tube_type_combo.currentText() # Este é o Delineamento
             current_speed = self.speed_combo.currentText()
@@ -4549,6 +4530,7 @@ class MainWindow(QWidget):
                     str(res.get('planting_speed')) == current_speed):
                     repetition_count += 1
             
+            # ... (Restante do bloco de análise de dados, Linhas 3543 a 3574, permanece o mesmo) ...
             analysis_data = {**self.initial_data} 
             analysis_data.update({
                 'id': self.next_analysis_id,
@@ -4587,16 +4569,19 @@ class MainWindow(QWidget):
             msg_box.exec()
             if msg_box.clickedButton() == go_to_report_btn:
                 self.tab_widget.setCurrentIndex(3)
-
+        
+        
+        # --- Lógica de Continuação/Pausa ---
         if is_auto_save:
+            # Se for salvamento automático, reseta contadores e continua pausado
             self.reset_counters_for_continuation()
             self.pause_flag = True
-            self.start_btn.setText("▶️ Continuar")
-            self.start_btn.setEnabled(True)
-            self.pause_btn.setEnabled(False)
-            self.save_analysis_btn.setEnabled(False)
-        else:
-            self.pause_analysis()
+        
+        # Define o estado da interface
+        self.start_btn.setText("▶️ Continuar")
+        self.start_btn.setEnabled(True)
+        self.pause_btn.setEnabled(False)
+        self.save_analysis_btn.setEnabled(False)
 
     def stop_analysis(self):
         """Para a análise do vídeo, salva os resultados e reseta para um novo início."""
@@ -4692,9 +4677,9 @@ class MainWindow(QWidget):
             msg_box.exec()
 
             if msg_box.clickedButton() == save_button:
-                # --- ALTERAÇÃO: Salva e reseta os contadores para continuar a análise ---
-                self.save_and_pause_analysis(reset_counters=True, is_auto_save=True)
-                # --- FIM DA ALTERAÇÃO ---
+                # Salva e reseta os contadores para continuar a análise a partir daqui
+                # A função save_and_pause_analysis irá internamente chamar reset_counters_for_continuation
+                self.save_and_pause_analysis(is_auto_save=True)
 
 
     def detect_seeds_in_frame(self, frame):
@@ -5479,7 +5464,7 @@ class MainWindow(QWidget):
 
     def show_update_dialog(self):
         """Exibe a janela de diálogo de atualização."""
-        dialog = UpdateDialog(self, current_version=self.CURRENT_VERSION)
+        dialog = UpdateDialog(self, current_version=CURRENT_VERSION)
         dialog.exec()
 
     def update_finished_handler(self, success, message):
