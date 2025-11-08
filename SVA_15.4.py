@@ -39,7 +39,10 @@ if seeds_counter_path not in sys.path:
 
 # --- VARIÁVEIS GLOBAIS DE ATUALIZAÇÃO ---
 # ATENÇÃO: REVOGUE ESTE TOKEN.
-GITHUB_TOKEN = "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" 
+#GITHUB_TOKEN = "#2025_#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" 
+
+# Carrega o token de uma variável de ambiente. Se não existir, fica None.
+GITHUB_TOKEN = os.environ.get("SVA_GITHUB_TOKEN")
 
 GITHUB_REPO = "Matos433/SVA_Seed_Vision_Analyzer"
 TARGET_FILENAME = "best.pt"
@@ -101,16 +104,19 @@ def is_version_greater(latest_version, current_version):
         # Fallback se a comparação baseada em números falhar (compara strings limpas)
         return clean_version_str(latest_version) != clean_version_str(current_version)
 
+# Linha 111 (Substituída)
 def get_yolo_asset_url(url):
     """Busca a URL de download (asset_url) para o best.pt na release mais recente."""
     print(f"Buscando asset YOLO na URL: {url}")
-    if not GITHUB_TOKEN:
-        print("ERRO CRÍTICO: GITHUB_TOKEN não está definido no código!")
-        return None 
     
-    headers = {
-        "Accept": "application/vnd.github.v3+json",
-        "Authorization": f"token {GITHUB_TOKEN}"}
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    
+    # Adiciona o token APENAS SE ele existir
+    if GITHUB_TOKEN:
+        print("Usando token de autenticação para a API.")
+        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+    else:
+        print("AVISO: GITHUB_TOKEN não definido. Usando API pública (pode ter limite de taxa).")
         
     try:
         response = requests.get(url, headers=headers, timeout=10)
@@ -191,15 +197,20 @@ class Downloader(QThread ):
         self.url = url 
         self.filepath = filepath
 
+    # Linha 203 (Substituída)
     def run(self):
         """Baixa o arquivo da URL fornecida e salva no caminho especificado."""
         try:
             session = requests.Session()
             
             # 1. Configura os cabeçalhos para o download de Asset
-            session.headers.update({
-                "Authorization": f"token {GITHUB_TOKEN}",
-                "Accept": "application/octet-stream"}) 
+            headers = {"Accept": "application/octet-stream"}
+            
+            # Adiciona o token APENAS SE ele existir
+            if GITHUB_TOKEN:
+                headers["Authorization"] = f"token {GITHUB_TOKEN}"
+                
+            session.headers.update(headers)
             
             # 2. Faz a requisição na URL do Asset
             response = session.get(self.url, stream=True, allow_redirects=True) 
