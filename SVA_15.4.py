@@ -46,7 +46,7 @@ GITHUB_TOKEN = os.environ.get("SVA_GITHUB_TOKEN")
 
 GITHUB_REPO = "Matos433/SVA_Seed_Vision_Analyzer"
 TARGET_FILENAME = "best.pt"
-TARGET_DATE_STR = "07/11/2025"
+TARGET_DATE_STR = "08/11/2025"
 TARGET_DATE = datetime.strptime(TARGET_DATE_STR, "%d/%m/%Y")
 
 SOFTWARE_FILENAME = "SVA_2025.14.1.exe" # Nome do arquivo EXE (Ajuste se necessário)
@@ -104,7 +104,8 @@ def is_version_greater(latest_version, current_version):
         # Fallback se a comparação baseada em números falhar (compara strings limpas)
         return clean_version_str(latest_version) != clean_version_str(current_version)
 
-# Linha 111 (Substituída)
+
+# Linha 111 (Substitua esta função inteira)
 def get_yolo_asset_url(url):
     """Busca a URL de download (asset_url) para o best.pt na release mais recente."""
     print(f"Buscando asset YOLO na URL: {url}")
@@ -143,16 +144,55 @@ def get_yolo_asset_url(url):
     except Exception as e:
         print(f"Erro ao buscar asset YOLO: {e}")
         return None
+    
+    """Busca a URL do asset 'best.pt' na release mais recente do GitHub."""
+    headers = {"Accept": "application/vnd.github.v3+json"}
 
+    # Adiciona o token APENAS SE ele existir
+    if GITHUB_TOKEN:
+        print("Usando token de autenticação para a API.")
+        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+    else:
+        print("AVISO: GITHUB_TOKEN não definido. Usando API pública...")
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status() 
+        data = response.json()
+        
+        # Procura o Asset URL para o best.pt
+        download_url = None
+        if 'assets' in data and len(data['assets']) > 0:
+            for asset in data['assets']:
+                if asset.get('name', '') == TARGET_FILENAME: 
+                    download_url = asset.get('url') 
+                    break
+        
+        if not download_url:
+            print(f"AVISO: Arquivo '{TARGET_FILENAME}' não foi localizado nos assets da release.")
+            return None
+            
+        print(f"URL do Asset YOLO encontrada: {download_url}")
+        return download_url
+
+    except requests.exceptions.HTTPError as http_err:
+        print(f"Erro HTTP: {http_err}")
+    except Exception as e:
+        print(f"Erro ao buscar asset YOLO: {e}")
+        return None
+
+# Linha 150 (Substitua esta função inteira)
 def get_latest_version(url):
     """Busca a última versão e a URL de download do executável no GitHub Releases."""
-    if not GITHUB_TOKEN:
-        print("ERRO CRÍTICO: GITHUB_TOKEN não está definido. Acesso à API de Releases falhou.")
-        return "0.0.0", None
     
-    headers = {
-        "Accept": "application/vnd.github.v3+json",
-        "Authorization": f"token {GITHUB_TOKEN}"}
+    headers = {"Accept": "application/vnd.github.v3+json"}
+
+    # Adiciona o token APENAS SE ele existir
+    if GITHUB_TOKEN:
+        print("Usando token de autenticação para a API.")
+        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+    else:
+        print("AVISO: GITHUB_TOKEN não definido. Usando API pública (pode ter limite de taxa).")
         
     try:
         response = requests.get(url, headers=headers, timeout=10)
@@ -197,7 +237,7 @@ class Downloader(QThread ):
         self.url = url 
         self.filepath = filepath
 
-    # Linha 203 (Substituída)
+    # Dentro da classe Downloader
     def run(self):
         """Baixa o arquivo da URL fornecida e salva no caminho especificado."""
         try:
@@ -513,7 +553,7 @@ class UpdateDialog(QDialog):
         """Inicia o download do novo modelo YOLO (best.pt) do GitHub."""
         
         # 1. Busca a URL do Asset do best.pt (Usando a API de Releases)
-        yolo_asset_url = get_yolo_asset_url(GITHUB_RELEASES_API_URL)
+        yolo_asset_url = get_yolo_asset_url(GITHUB_RELEASES_API_URL) # CORREÇÃO: Chamada para a função renomeada
         
         if not yolo_asset_url:
             QMessageBox.critical(self, "Erro de Download", 
