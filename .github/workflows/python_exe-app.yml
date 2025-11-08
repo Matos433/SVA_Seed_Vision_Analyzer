@@ -47,30 +47,27 @@ jobs:
 
     - name: 📦 Build executable with PyInstaller
       run: |
-        # Main script: SVA_15.4.py
-        # Hidden Imports: Necessários devido ao lazy loading e módulos internos
-        # Assets: icone.ico, logo.png (assumidos na raiz), e a pasta SVA (para o best.pt)
-        pyinstaller --noconfirm --onefile --windowed \
-        --name "SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}" \
-        --icon "icone.ico" \
-        --add-data "icone.ico;." \
-        --add-data "logo.png;." \
-        --add-data "logo2.png;." \
-        --add-data "SVA;SVA" \
-        --hidden-import "matplotlib.backends.backend_qtquick" \
-        --hidden-import "matplotlib.backends.backend_qtagg" \
-        --hidden-import "ultralytics" \
+        pyinstaller --noconfirm --onefile --windowed `
+        --name "SVA_Seed_Vision_Analyzer_${{ env.VERSION }}" `
+        --icon "icone.ico" `
+        --add-data "icone.ico;." `
+        --add-data "logo.png;." `
+        --add-data "logo2.png;." `
+        --add-data "SVA;SVA" `
+        --hidden-import "matplotlib.backends.backend_qtquick" `
+        --hidden-import "matplotlib.backends.backend_qtagg" `
+        --hidden-import "ultralytics" `
         "SVA_15.4.py"
 
     - name: ⬆️ Upload executable artifact
       uses: actions/upload-artifact@v4
       with:
-        name: SVA_v${{ env.VERSION }}
-        path: dist/SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}.exe
+        name: SVA_${{ env.VERSION }}
+        path: dist/SVA_Seed_Vision_Analyzer_${{ env.VERSION }}.exe
 
     - name: 🏷️ Create GitHub Release Tag
       id: create_tag
-      run: echo "RELEASE_TAG=v${{ env.VERSION }}" >> $env:GITHUB_ENV
+      run: echo "RELEASE_TAG=${{ env.VERSION }}" >> $env:GITHUB_ENV
       shell: powershell
 
     - name: 🚀 Create GitHub Release
@@ -83,6 +80,6 @@ jobs:
           Includes improvements in startup speed and UI corrections.
         draft: false
         prerelease: false
-        files: dist/SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}.exe
+        files: dist/SVA_Seed_Vision_Analyzer_${{ env.VERSION }}.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
