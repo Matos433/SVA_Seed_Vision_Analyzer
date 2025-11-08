@@ -48,7 +48,7 @@ jobs:
     - name: 📦 Build executable with PyInstaller
       run: |
         pyinstaller --noconfirm --onefile --windowed `
-        --name "SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}" `
+        --name "SVA_${{ env.VERSION }}" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
         --add-data "logo.png;." `
@@ -63,7 +63,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: SVA_${{ env.VERSION }}
-        path: dist/SVA_Seed_Vision_Analyzer_${{ env.VERSION }}.exe
+        path: dist/SVA_${{ env.VERSION }}.exe
 
     - name: 🏷️ Create GitHub Release Tag
       id: create_tag
@@ -74,14 +74,14 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ env.RELEASE_TAG }}
-        name: "Release SVA ${{ env.VERSION }}"
+        name: "${{ env.VERSION }}"
         body: |
           Automatic release of Seed Vision Analyzer version ${{ env.VERSION }}.
           Includes improvements in startup speed and UI corrections.
         draft: false
         prerelease: false
         files: |
-          dist/SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}.exe
+          dist/SVA_${{ env.VERSION }}.exe
           SVA/best.pt
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

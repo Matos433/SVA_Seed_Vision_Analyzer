@@ -69,13 +69,13 @@ TARGET_FILENAME = "best.pt"
 TARGET_DATE_STR = "08/11/2025"
 TARGET_DATE = datetime.strptime(TARGET_DATE_STR, "%d/%m/%Y")
 
-SOFTWARE_FILENAME = "SVA_2025.14.1.exe" # Nome do arquivo EXE (Ajuste se necessário)
+SOFTWARE_FILENAME = f"SVA_2025.1.16.exe" # Nome do arquivo EXE (Ajuste se necessário)
 GITHUB_LAUNCHER = GITHUB_REPO
 
 # URL para a API de Releases do GitHub para obter a última versão
 GITHUB_RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_LAUNCHER}/releases/latest"
 
-REMOTE_VERSION = "v2025.1.14" 
+REMOTE_VERSION = "v2025.1.15" 
 REMOTE_DOWNLOAD_URL = ""
 
 
@@ -599,7 +599,7 @@ class UpdateDialog(QDialog):
             QMessageBox.critical(self, "Erro de Download", f"Falha ao baixar o arquivo de {file_path}.")
             self.set_status(status_label, "Falha", "#ef4444")
             button.setEnabled(True)
-            
+
     # (Esta função deve estar dentro da classe UpdateDialog)
     def create_updater_script(self, old_exe_path, new_exe_path):
         """
@@ -2311,7 +2311,7 @@ class MainWindow(QWidget):
     """Janela principal do aplicativo Detector de Sementes."""
     # CORREÇÃO CRÍTICA: Define a versão atual do software como string limpa (sem 'v')
     # Use a versão real do seu executável aqui! Exemplo: "2025.1.14"
-    CURRENT_VERSION = "v2025.1.13" 
+    CURRENT_VERSION = "v2025.1.16" 
 
     def __init__(self, initial_data=None):
         super().__init__()
