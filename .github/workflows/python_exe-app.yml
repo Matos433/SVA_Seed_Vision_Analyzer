@@ -43,7 +43,8 @@ jobs:
         # Empacotamento
         pip install pyinstaller
         # Instala YOLOv8 com versão específica para PyInstaller
-        pip install ultralytics==8.0.22 --no-deps 
+        # Instala YOLOv8 com versão mais recente para garantir compatibilidade
+        pip install ultralytics --no-deps 
       
     - name: ⚙️ Adjust recursion limit (Optional, for large apps)
       run: python -c "import sys; sys.setrecursionlimit(5000)"
@@ -93,5 +94,6 @@ jobs:
         files: |
           dist/SVA_${{ env.VERSION }}.exe
           SVA/best.pt
+          SVA_15.5.py
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
