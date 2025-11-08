@@ -1,4 +1,3 @@
-# Version 1.0 - Workflow para SVA (Seed Vision Analyzer)
 name: Build SVA Executable and Release
 
 on:
@@ -87,8 +86,3 @@ jobs:
         files: dist/SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-### Onde Colocar o Arquivo
-Você deve salvar este código no seu repositório GitHub, no seguinte caminho:
-
-.github/workflows/python_exe-app.yml
