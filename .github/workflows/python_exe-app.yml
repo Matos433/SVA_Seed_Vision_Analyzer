@@ -48,7 +48,7 @@ jobs:
     - name: 📦 Build executable with PyInstaller
       run: |
         pyinstaller --noconfirm --onefile --windowed `
-        --name "SVA_Seed_Vision_Analyzer_${{ env.VERSION }}" `
+        --name "SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
         --add-data "logo.png;." `
@@ -80,6 +80,8 @@ jobs:
           Includes improvements in startup speed and UI corrections.
         draft: false
         prerelease: false
-        files: dist/SVA_Seed_Vision_Analyzer_${{ env.VERSION }}.exe
+        files: |
+          dist/SVA_Seed_Vision_Analyzer_v${{ env.VERSION }}.exe
+          SVA/best.pt
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (QButtonGroup,
 from PySide6.QtGui import QImage, QPixmap, QFont, QIcon, QPalette, QColor, QDoubleValidator, QIntValidator, QPainter, QPen, QBrush, QPainterPath, QDesktopServices
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtCore import QRect, QPoint, QSize
+import subprocess
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image as RLImage, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -31,11 +32,30 @@ import matplotlib.patches as patches
 import pyqtgraph as pg
 from io import BytesIO
 
-# Adiciona o diretório 'SVA' ao path para permitir a importação do módulo de treinamento
+'''# Adiciona o diretório 'SVA' ao path para permitir a importação do módulo de treinamento
 current_dir = os.path.dirname(os.path.abspath(__file__))
 seeds_counter_path = os.path.join(current_dir, 'SVA')
 if seeds_counter_path not in sys.path:
-    sys.path.insert(0, seeds_counter_path)
+    sys.path.insert(0, seeds_counter_path)'''
+
+# --- INÍCIO DAS NOVAS DEFINIÇÕES DE CAMINHO ---
+
+# Determina o diretório base (funciona tanto para .py quanto para .exe compilado)
+if getattr(sys, 'frozen', False):
+    # Estamos rodando em um .exe compilado
+    BASE_DIR = os.path.dirname(sys.executable)
+else:
+    # Estamos rodando em um script .py normal
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Define os diretórios padrão baseados no BASE_DIR
+PROJECTS_DIR = os.path.join(BASE_DIR, "Meus Projetos")
+DOWNLOAD_DIR = os.path.join(BASE_DIR, "SVA")
+print(f"DEBUG: Diretório Base (BASE_DIR) definido como: {BASE_DIR}")
+print(f"DEBUG: Diretório de Projetos (PROJECTS_DIR) definido como: {PROJECTS_DIR}")
+print(f"DEBUG: Diretório de Downloads (DOWNLOAD_DIR) definido como: {DOWNLOAD_DIR}")
+
+# --- FIM DAS NOVAS DEFINIÇÕES DE CAMINHO ---
 
 # --- VARIÁVEIS GLOBAIS DE ATUALIZAÇÃO ---
 # ATENÇÃO: REVOGUE ESTE TOKEN.
@@ -55,7 +75,7 @@ GITHUB_LAUNCHER = GITHUB_REPO
 # URL para a API de Releases do GitHub para obter a última versão
 GITHUB_RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_LAUNCHER}/releases/latest"
 
-REMOTE_VERSION = "v2025.1.15" 
+REMOTE_VERSION = "v2025.1.14" 
 REMOTE_DOWNLOAD_URL = ""
 
 
@@ -279,12 +299,14 @@ class UpdateDialog(QDialog):
         self.setWindowTitle("Gerenciador de Atualizações")
         self.setFixedSize(750, 300)
         self.current_version = current_version
-        self.program_root_path = os.path.dirname(os.path.abspath(__file__))
-        self.model_check_path = os.path.join(self.program_root_path, "SVA")
+        
+        # Garante que o diretório de download (SVA) exista
+        os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+        
         self.setup_ui()
         self.downloader = None 
         self.update_signal.connect(self.update_version_ui)
-        self.check_status() 
+        self.check_status()
 
     def setup_ui(self):
         main_layout = QVBoxLayout(self)
@@ -413,7 +435,8 @@ class UpdateDialog(QDialog):
         threading.Thread(target=check_software_update).start()
 
     # 2. Status do Modelo YOLO
-        yolo_path = os.path.join(self.model_check_path, TARGET_FILENAME)
+        # CORREÇÃO: Usa o DOWNLOAD_DIR (pasta SVA)
+        yolo_path = os.path.join(DOWNLOAD_DIR, TARGET_FILENAME)
         is_yolo_outdated = True
         
         if os.path.exists(yolo_path):
@@ -485,8 +508,8 @@ class UpdateDialog(QDialog):
         msg_box.setStyleSheet(light_msg_box_style)
         msg_box.exec()
 
-        target_dir = os.path.join(self.program_root_path, "SVA")
-        target_path = os.path.join(target_dir, SOFTWARE_FILENAME)
+        # CORREÇÃO: Salva diretamente no DOWNLOAD_DIR (pasta SVA)
+        target_path = os.path.join(DOWNLOAD_DIR, SOFTWARE_FILENAME)
         
         self.start_download(REMOTE_DOWNLOAD_URL, target_path, self.status_version, self.btn_version)
 
@@ -502,53 +525,122 @@ class UpdateDialog(QDialog):
         button.setEnabled(False)
         self.set_status(status_label, "Baixando...", "#f59e0b")
 
-    def download_finished(self, success, file_path, status_label, button):
-        """Slot unificado para lidar com o fim do download."""
-        button.setEnabled(True) 
-        
-        light_msg_box_style = """
-            QMessageBox { background-color: #ffffff; }
-            QLabel { color: #000000; }
-            QPushButton { background-color: #4b5563; color: white; border: none; padding: 8px 20px; border-radius: 5px; }
-            QPushButton:hover { background-color: #374151; }
-        """
-        
-        if success:
-            msg_sucesso = QMessageBox(self)
-            msg_sucesso.setWindowTitle("Sucesso")
-            msg_sucesso.setIcon(QMessageBox.Information)
-            msg_sucesso.setText(f"Download concluído com sucesso em:\n{file_path}")
-            msg_sucesso.setStandardButtons(QMessageBox.Ok)
-            msg_sucesso.setStyleSheet(light_msg_box_style)
-            msg_sucesso.exec()
 
-            self.set_status(status_label, "Atualizado", "#3b82f6")
-            if os.path.basename(file_path) == TARGET_FILENAME:
-                self.check_status()
+    def download_finished(self, success, file_path, status_label, button):
+        """
+        Chamado quando o download (em thread) é concluído.
+        Inicia a reinicialização automática se for o software.
+        """
+        if success:
+            filename = os.path.basename(file_path)
             
-            if os.path.basename(file_path) == SOFTWARE_FILENAME:
-                msg_reiniciar = QMessageBox(self)
-                msg_reiniciar.setWindowTitle("Reinicialização Necessária")
-                msg_reiniciar.setIcon(QMessageBox.Information)
-                msg_reiniciar.setText("O novo executável foi baixado. Por favor, feche o programa atual e execute o novo arquivo.")
-                msg_reiniciar.setStandardButtons(QMessageBox.Ok)
-                msg_reiniciar.setStyleSheet(light_msg_box_style)
-                msg_reiniciar.exec()
-                
+            # --- LÓGICA PARA O MODELO YOLO (best.pt) ---
+            if filename == TARGET_FILENAME:
+                # Atualiza o status do YOLO na UI
+                self.check_status() 
                 self.set_status(status_label, "Baixado", "#3b82f6")
                 button.setEnabled(False)
-        else:
-            msg_falha = QMessageBox(self)
-            msg_falha.setWindowTitle("Erro de Download")
-            msg_falha.setIcon(QMessageBox.Critical)
-            msg_falha.setText(f"Falha ao baixar o arquivo. Verifique o console para mais detalhes.")
-            msg_falha.setStandardButtons(QMessageBox.Ok)
-            msg_falha.setStyleSheet(light_msg_box_style) 
-            msg_falha.exec()
-            
-            self.set_status(status_label, "Falhou", "#dc2626")
-            button.setEnabled(True)
+                
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("Modelo Atualizado")
+                msg_box.setText(f"O modelo {filename} foi baixado com sucesso para a pasta SVA.")
+                msg_box.setIcon(QMessageBox.Icon.Information)
+                msg_box.exec()
 
+            # --- LÓGICA PARA O SOFTWARE (.exe) ---
+            elif filename == SOFTWARE_FILENAME:
+                
+                # VERIFICA SE ESTAMOS RODANDO COMO .EXE COMPILADO
+                if not getattr(sys, 'frozen', False):
+                    # Estamos rodando como .py, mostramos a msg antiga
+                    msg_reiniciar = QMessageBox(self)
+                    msg_reiniciar.setWindowTitle("Download Concluído")
+                    msg_reiniciar.setText(f"O novo arquivo '{filename}' foi baixado na pasta SVA.\n\n"
+                                          "(Modo .py) Por favor, feche o script e execute o novo arquivo manualmente.")
+                    msg_reiniciar.setIcon(QMessageBox.Icon.Information)
+                    msg_reiniciar.exec()
+                    self.set_status(status_label, "Baixado", "#3b82f6")
+                    button.setEnabled(False)
+                    return
+
+                # --- ESTAMOS RODANDO COMO .EXE, EXECUTA O REINICIO AUTOMÁTICO ---
+                try:
+                    old_exe_path = sys.executable
+                    new_exe_path = file_path # Este é o caminho completo do download
+                    
+                    updater_path = self.create_updater_script(old_exe_path, new_exe_path)
+                    
+                    if updater_path:
+                        # Mostra uma mensagem final antes de fechar
+                        QMessageBox.information(self, "Reiniciando...", 
+                                                "Download concluído. O SVA será reiniciado para aplicar a atualização.")
+                        
+                        # Lança o script .bat em um processo separado e destacado
+                        # Isso permite que o .bat continue mesmo após o .exe fechar
+                        subprocess.Popen([updater_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                        
+                        # Fecha a aplicação principal
+                        # self.parent() é a MainWindow
+                        if self.parent() and isinstance(self.parent(), MainWindow):
+                            self.parent().close()
+                        else:
+                            sys.exit(0) # Força a saída
+                    else:
+                        raise Exception("Falha ao criar script de update.")
+                        
+                except Exception as e:
+                    print(f"Erro ao tentar reiniciar: {e}")
+                    QMessageBox.critical(self, "Erro na Atualização", 
+                                         f"Falha ao iniciar o processo de reinicialização automática.\n\n"
+                                         f"Por favor, feche o programa e execute manualmente o novo arquivo baixado em:\n{file_path}")
+                    
+        else:
+            # O download falhou
+            QMessageBox.critical(self, "Erro de Download", f"Falha ao baixar o arquivo de {file_path}.")
+            self.set_status(status_label, "Falha", "#ef4444")
+            button.setEnabled(True)
+            
+    # (Esta função deve estar dentro da classe UpdateDialog)
+    def create_updater_script(self, old_exe_path, new_exe_path):
+        """
+        Cria um script .bat no diretório base para lidar com a 
+        substituição do executável.
+        """
+        updater_path = os.path.join(BASE_DIR, "update_sva.bat")
+        
+        # Conteúdo do script .bat
+        # %1 = Caminho do .exe antigo (ex: C:\App\SVA.exe)
+        # %2 = Caminho do .exe novo (ex: C:\App\SVA\SVA_new.exe)
+        
+        script_content = f"""@echo off
+echo SVA Updater - Aguarde...
+
+:: Espera 3 segundos para o SVA principal fechar
+timeout /t 3 /nobreak > nul
+
+:: Deleta o executavel antigo (que acabou de fechar)
+echo Removendo versao antiga...
+del "{old_exe_path}"
+
+:: Move o novo executavel (da pasta SVA) para o local do antigo
+echo Instalando nova versao...
+move "{new_exe_path}" "{old_exe_path}"
+
+:: Inicia o novo .exe
+echo Iniciando SVA...
+start "" "{old_exe_path}"
+
+:: Auto-deleta este script
+(goto) 2>nul & del "%~f0"
+"""
+        try:
+            with open(updater_path, "w", encoding="utf-8") as f:
+                f.write(script_content)
+            return updater_path
+        except Exception as e:
+            print(f"Erro ao criar script de update: {e}")
+            return None
+        
     def download_new_yolo(self):
         """Inicia o download do novo modelo YOLO (best.pt) do GitHub."""
         
@@ -561,10 +653,9 @@ class UpdateDialog(QDialog):
                                  "Verifique se o token é válido e se o arquivo 'best.pt' foi anexado como Asset na Release do repositório.")
             return
 
-        # 2. Define o caminho de salvamento (dentro da pasta SVA)
-        target_dir = os.path.join(self.program_root_path, "SVA")
-        os.makedirs(target_dir, exist_ok=True) 
-        target_path = os.path.join(target_dir, TARGET_FILENAME)
+        # 2. Define o caminho de salvamento (CORREÇÃO: usa DOWNLOAD_DIR)
+        # (A pasta já foi criada no __init__)
+        target_path = os.path.join(DOWNLOAD_DIR, TARGET_FILENAME)
         
         msg_box = QMessageBox(self)
         msg_box.setWindowTitle("Atualização de Modelo")
@@ -1203,19 +1294,21 @@ class SetupDialog(QDialog):
     def populate_projects_list(self):
         """Busca projetos na pasta 'Meus Projetos' e os exibe na lista."""
         self.projects_list.setRowCount(0) # Limpa a tabela
-        project_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Meus Projetos")
         
-        if not os.path.isdir(project_dir):
+        # CORREÇÃO: Usa o PROJECTS_DIR e garante que ele exista
+        os.makedirs(PROJECTS_DIR, exist_ok=True)
+        
+        if not os.path.isdir(PROJECTS_DIR):
             return
 
-        project_files = [f for f in os.listdir(project_dir) if f.endswith('.json')]
+        project_files = [f for f in os.listdir(PROJECTS_DIR) if f.endswith('.json')]
         if not project_files:
             return
 
         # Prepara os dados para ordenação por data
         projects_with_dates = []
         for filename in project_files:
-            file_path = os.path.join(project_dir, filename)
+            file_path = os.path.join(PROJECTS_DIR, filename)
             try:
                 mod_time = os.path.getmtime(file_path)
                 projects_with_dates.append((filename, mod_time))
@@ -1243,8 +1336,9 @@ class SetupDialog(QDialog):
         if not filename_item:
             return
         filename = filename_item.text()
-        project_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Meus Projetos")
-        file_path = os.path.join(project_dir, filename)
+        
+        # CORREÇÃO: Usa o PROJECTS_DIR
+        file_path = os.path.join(PROJECTS_DIR, filename)
 
         if os.path.exists(file_path):
             try:
@@ -2217,7 +2311,7 @@ class MainWindow(QWidget):
     """Janela principal do aplicativo Detector de Sementes."""
     # CORREÇÃO CRÍTICA: Define a versão atual do software como string limpa (sem 'v')
     # Use a versão real do seu executável aqui! Exemplo: "2025.1.14"
-    CURRENT_VERSION = "v2025.1.14" 
+    CURRENT_VERSION = "v2025.1.13" 
 
     def __init__(self, initial_data=None):
         super().__init__()
@@ -4268,8 +4362,8 @@ class MainWindow(QWidget):
 
     def select_video(self):
         """Abre um diálogo para o usuário selecionar um arquivo de vídeo."""
-        start_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path, _ = QFileDialog.getOpenFileName(self, "Selecionar Vídeo", start_dir, "Arquivos de Vídeo (*.mp4 *.avi *.mov)")
+        # CORREÇÃO: Usa o BASE_DIR
+        file_path, _ = QFileDialog.getOpenFileName(self, "Selecionar Vídeo", BASE_DIR, "Arquivos de Vídeo (*.mp4 *.avi *.mov)")
         if file_path:
             self.load_video(file_path)
             self.reset_analysis()
@@ -5263,11 +5357,10 @@ class MainWindow(QWidget):
 
     def save_project(self):
         # --- CORREÇÃO: Salva na pasta "Meus Projetos" ---
-        projects_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Meus Projetos")
-        os.makedirs(projects_path, exist_ok=True)
+        os.makedirs(PROJECTS_DIR, exist_ok=True)
         
         default_filename = f"{self.initial_data.get('test_name', 'projeto_sem_nome')}.json"
-        filename, _ = QFileDialog.getSaveFileName(self, "Salvar Projeto", os.path.join(projects_path, default_filename), "JSON Files (*.json)")
+        filename, _ = QFileDialog.getSaveFileName(self, "Salvar Projeto", os.path.join(PROJECTS_DIR, default_filename), "JSON Files (*.json)")
         
         if filename:
             # --- CORREÇÃO: Inclui os dados iniciais no salvamento ---
@@ -5291,7 +5384,8 @@ class MainWindow(QWidget):
                 QMessageBox.critical(self, "Erro", f"Erro ao salvar o projeto: {e}")
 
     def load_project(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Carregar Projeto", self.project_dir, "JSON Files (*.json)")
+        # CORREÇÃO: Usa PROJECTS_DIR
+        filename, _ = QFileDialog.getOpenFileName(self, "Carregar Projeto", PROJECTS_DIR, "JSON Files (*.json)")
         if filename:
             try:
                 with open(filename, 'r') as f:
