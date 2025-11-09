@@ -95,5 +95,6 @@ jobs:
           dist/SVA_${{ env.VERSION }}.exe
           SVA/best.pt
           SVA_15.6.py
+          Train_Model_Seeds_11
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
