@@ -23,12 +23,12 @@ jobs:
       with:
         python-version: '3.11.9'
 
-    - name: 🔎 Extract version from SVA_15.7.py
+    - name: 🔎 Extract version from SVA_15.6.py
       id: extract_version
       # Busca o valor da variável CURRENT_VERSION dentro do arquivo SVA_15.5.py
       # ATENÇÃO: Ajustado para o nome do seu arquivo mais recente
       run: |
-        $version = (Get-Content SVA_15.7.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
+        $version = (Get-Content SVA_15.6.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
         echo "VERSION=$version" >> $env:GITHUB_ENV
       shell: powershell
 
