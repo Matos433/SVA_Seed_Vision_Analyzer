@@ -25,7 +25,7 @@ jobs:
 
     - name: 🔎 Extract version from SVA_15.6.py
       id: extract_version
-      # Busca o valor da variável CURRENT_VERSION dentro do arquivo SVA_15.5.py
+      # Busca o valor da variável CURRENT_VERSION dentro do arquivo SVA_15.6.py
       # ATENÇÃO: Ajustado para o nome do seu arquivo mais recente
       run: |
         $version = (Get-Content SVA_15.6.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
@@ -66,7 +66,7 @@ jobs:
         --hidden-import "matplotlib.backends.backend_qtquick" `
         --hidden-import "matplotlib.backends.backend_qtagg" `
         --hidden-import "ultralytics `
-        "SVA_15.6.py"
+        SVA_15.6.py
 
     - name: ⬆️ Upload executable artifact
       uses: actions/upload-artifact@v4
