@@ -62,7 +62,7 @@ GITHUB_LAUNCHER = GITHUB_REPO
 # URL para a API de Releases do GitHub para obter a última versão
 GITHUB_RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_LAUNCHER}/releases/latest"
 # --- NOVO: VARIÁVEL GLOBAL DE VERSÃO (SSOT) ---
-CURRENT_VERSION = "v2025.1.17" 
+CURRENT_VERSION = "v2025.1.18" 
 SOFTWARE_FILENAME = f"SVA_{CURRENT_VERSION}.exe"
 # --- FIM NOVO ---
 REMOTE_VERSION = f"{CURRENT_VERSION}" 

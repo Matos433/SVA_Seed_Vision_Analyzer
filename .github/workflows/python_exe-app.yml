@@ -65,7 +65,7 @@ jobs:
         --add-data "SVA;SVA" `
         --hidden-import "matplotlib.backends.backend_qtquick" `
         --hidden-import "matplotlib.backends.backend_qtagg" `
-        --hidden-import "ultralytics `
+        --hidden-import "ultralytics --no-deps `
         SVA_15.6.py
 
     - name: ⬆️ Upload executable artifact
