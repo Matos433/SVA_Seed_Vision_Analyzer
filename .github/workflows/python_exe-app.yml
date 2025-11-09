@@ -53,7 +53,7 @@ jobs:
     - name: 📦 Build executable with PyInstaller
       run: |
         # YOLOv8 requer esta correção para funcionar
-        pip install ultralytics==8.0.22 --no-deps # Instala YOLOv8 com versão correta (sem dependências)
+        pip install ultralytics --no-deps # Instala YOLOv8 com versão correta (sem dependências)
 
         # CORREÇÃO DE OTIMIZAÇÃO: Adicionado --clean e --strip
         pyinstaller --noconfirm --onefile --windowed --clean --strip `
