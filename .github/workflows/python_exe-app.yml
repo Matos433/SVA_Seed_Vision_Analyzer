@@ -66,7 +66,7 @@ jobs:
         --hidden-import "matplotlib.backends.backend_qtquick" `
         --hidden-import "matplotlib.backends.backend_qtagg" `
         --hidden-import "ultralytics --no-deps" `
-        "SVA_15.5.py"
+        "SVA_15.6.py"
 
     - name: ⬆️ Upload executable artifact
       uses: actions/upload-artifact@v4
@@ -94,6 +94,6 @@ jobs:
         files: |
           dist/SVA_${{ env.VERSION }}.exe
           SVA/best.pt
-          SVA_15.5.py
+          SVA_15.6.py
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
