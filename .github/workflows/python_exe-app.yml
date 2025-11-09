@@ -23,12 +23,12 @@ jobs:
       with:
         python-version: '3.11.9'
 
-    - name: 🔎 Extract version from SVA_15.5.py
+    - name: 🔎 Extract version from SVA_15.7.py
       id: extract_version
       # Busca o valor da variável CURRENT_VERSION dentro do arquivo SVA_15.5.py
       # ATENÇÃO: Ajustado para o nome do seu arquivo mais recente
       run: |
-        $version = (Get-Content SVA_15.5.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
+        $version = (Get-Content SVA_15.7.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
         echo "VERSION=$version" >> $env:GITHUB_ENV
       shell: powershell
 
@@ -57,7 +57,7 @@ jobs:
 
         # CORREÇÃO DE OTIMIZAÇÃO: Adicionado --clean e --strip
         pyinstaller --noconfirm --onefile --windowed --clean --strip `
-        --name "SVA_${{ env.VERSION }}.exe" `
+        --name "SVA_${{env.VERSION}}.exe" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
         --add-data "logo.png;." `
@@ -65,36 +65,36 @@ jobs:
         --add-data "SVA;SVA" `
         --hidden-import "matplotlib.backends.backend_qtquick" `
         --hidden-import "matplotlib.backends.backend_qtagg" `
-        --hidden-import "ultralytics --no-deps" `
+        --hidden-import "ultralytics `
         "SVA_15.6.py"
 
     - name: ⬆️ Upload executable artifact
       uses: actions/upload-artifact@v4
       with:
-        name: SVA_${{ env.VERSION }}
+        name: SVA_${{env.VERSION}}
         # CORREÇÃO: Caminho do arquivo usa o nome dinâmico
-        path: dist/SVA_${{ env.VERSION }}.exe
+        path: dist/SVA_${{env.VERSION}}.exe
 
     - name: 🏷️ Create GitHub Release Tag
       id: create_tag
-      run: echo "RELEASE_TAG=v${{ env.VERSION }}" >> $env:GITHUB_ENV
+      run: echo "RELEASE_TAG=v${{env.VERSION}}" >> $env:GITHUB_ENV
       shell: powershell
 
     - name: 🚀 Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ env.RELEASE_TAG }}
-        name: "Release SVA ${{ env.VERSION }}"
+        tag_name: ${{env.RELEASE_TAG}}
+        name: "SVA_${{env.VERSION}}"
         body: |
-          Automatic release of Seed Vision Analyzer version ${{ env.VERSION }}.
+          Automatic release of Seed Vision Analyzer version ${{env.VERSION}}.
           Includes improvements in startup speed and UI corrections.
         draft: false
         prerelease: false
         # CORREÇÃO CRÍTICA: Adiciona o best.pt na Release junto com o EXE
         files: |
-          dist/SVA_${{ env.VERSION }}.exe
+          dist/SVA_${{env.VERSION}}.exe
           SVA/best.pt
           SVA_15.6.py
           Train_Model_Seeds_11
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
