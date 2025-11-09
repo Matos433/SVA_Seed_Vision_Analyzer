@@ -65,13 +65,13 @@ jobs:
         --add-data "SVA;SVA" `
         --hidden-import "matplotlib.backends.backend_qtquick" `
         --hidden-import "matplotlib.backends.backend_qtagg" `
-        --hidden-import "ultralytics" `
+        --hidden-import "ultralytics --no-deps" `
         "SVA_15.5.py"
 
     - name: ⬆️ Upload executable artifact
       uses: actions/upload-artifact@v4
       with:
-        name: SVA_v${{ env.VERSION }}
+        name: SVA_${{ env.VERSION }}
         # CORREÇÃO: Caminho do arquivo usa o nome dinâmico
         path: dist/SVA_${{ env.VERSION }}.exe
 
