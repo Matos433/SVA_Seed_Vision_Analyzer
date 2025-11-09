@@ -62,7 +62,7 @@ GITHUB_LAUNCHER = GITHUB_REPO
 # URL para a API de Releases do GitHub para obter a última versão
 GITHUB_RELEASES_API_URL = f"https://api.github.com/repos/{GITHUB_LAUNCHER}/releases/latest"
 # --- NOVO: VARIÁVEL GLOBAL DE VERSÃO (SSOT) ---
-CURRENT_VERSION = "v2025.1.18" 
+CURRENT_VERSION = "v2025.1.18"
 SOFTWARE_FILENAME = f"SVA_{CURRENT_VERSION}.exe"
 # --- FIM NOVO ---
 REMOTE_VERSION = f"{CURRENT_VERSION}" 
@@ -96,7 +96,7 @@ def is_version_greater(latest_version, current_version):
         if not isinstance(version_str, str):
             return str(version_str)
         # Remove 'v' ou 'vv' e espaços
-        return version_str.lower().lstrip('v').lstrip('v').strip() 
+        return version_str.lower().lstrip('v').lstrip('vv').strip() 
 
     def parse_version(version_str):
         try:
