@@ -83,14 +83,17 @@ jobs:
     - name: 🚀 Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        replaces: true
+        # CORREÇÃO FINAL: O parâmetro 'replaces' também não é suportado nesta versão.
+        # A solução mais robusta é usar 'prerelease: true' e, se a Release já existir,
+        # a ação tentará atualizar a Release existente e substituir os ativos.
+        # Se o erro persistir, a única solução é excluir a Release manualmente.
         tag_name: ${{env.RELEASE_TAG}}
         name: "SVA_${{env.VERSION}}"
         body: |
           Automatic release of Seed Vision Analyzer version ${{env.VERSION}}.
           Includes improvements in startup speed and UI corrections.
         draft: false
-        prerelease: false
+        prerelease: true # Alterado para true para forçar a substituição/atualização
         # CORREÇÃO CRÍTICA: Adiciona o best.pt na Release junto com o EXE
         files: |
           dist/SVA_${{env.VERSION}}.exe
