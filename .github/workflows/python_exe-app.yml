@@ -56,8 +56,8 @@ jobs:
         pip install ultralytics --no-deps # Instala YOLOv8 com versão correta (sem dependências)
 
         # CORREÇÃO DE OTIMIZAÇÃO: Adicionado --clean e --strip
-        pyinstaller --noconfirm --onefile --windowed --clean --strip `
-        --collect-all PySide6 `
+        pyinstaller --noconfirm --onedir --windowed --clean --strip `
+        
         --name "SVA_${{env.VERSION}}.exe" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
@@ -74,7 +74,7 @@ jobs:
       with:
         name: SVA_${{env.VERSION}}
         # CORREÇÃO: Caminho do arquivo usa o nome dinâmico
-        path: dist/SVA_${{env.VERSION}}.exe
+        path: dist/SVA_${{env.VERSION}}
 
     - name: 🏷️ Create GitHub Release Tag
       id: create_tag
@@ -95,7 +95,7 @@ jobs:
         prerelease: false # Alterado de volta para false
         # CORREÇÃO CRÍTICA: Adiciona o best.pt na Release junto com o EXE
         files: |
-          dist/SVA_${{env.VERSION}}.exe
+          dist/SVA_${{env.VERSION}}/**
           SVA/best.pt
           SVA_15.6.py
           Train_Model_Seeds_11
