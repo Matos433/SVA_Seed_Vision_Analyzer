@@ -1,15 +1,14 @@
-# Version 1.0 - Workflow para SVA (Seed Vision Analyzer)
+# Version 1.1 - Workflow para SVA (Seed Vision Analyzer) - Corrigido
 name: Build SVA Executable and Release
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch: # Permite execução manual novo teste,m ,1
+  workflow_dispatch: # Permite execução manual
 
 jobs:
   build:
-    # Recomendado usar um runner mais rápido ou Windows Server 2022 para performance
     runs-on: windows-latest
     permissions:
       contents: write # Necessário para criar Releases
@@ -25,8 +24,6 @@ jobs:
 
     - name: 🔎 Extract version from SVA_15.6.py
       id: extract_version
-      # Busca o valor da variável CURRENT_VERSION dentro do arquivo SVA_15.6.py
-      # ATENÇÃO: Ajustado para o nome do seu arquivo mais recente
       run: |
         $version = (Get-Content SVA_15.6.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
         echo "VERSION=$version" >> $env:GITHUB_ENV
@@ -42,20 +39,15 @@ jobs:
         pip install pyqtgraph
         # Empacotamento
         pip install pyinstaller
-        # Instala YOLOv8 com versão específica para PyInstaller
-        # Instala YOLOv8 com versão mais recente para garantir compatibilidade
-        pip install ultralytics --no-deps 
+        # Instala YOLOv8 (Ultralytics)
+        pip install ultralytics
+        # Dependências que o PyInstaller pode não ver
+        pip install scipy pytz
       
-    - name: ⚙️ Adjust recursion limit (Optional, for large apps)
-      run: python -c "import sys; sys.setrecursionlimit(5000)"
-
-    # Linha 60 (Início do bloco 'Build executable with PyInstaller')
     - name: 📦 Build executable with PyInstaller
       run: |
-        # YOLOv8 requer esta correção para funcionar
-        pip install ultralytics --no-deps # Instala YOLOv8 com versão correta (sem dependências)
+        # [FIXADO] Removida a instalação duplicada do ultralytics daqui.
 
-        # CORREÇÃO DE OTIMIZAÇÃO: Adicionado --clean e --strip
         pyinstaller --noconfirm --onefile --windowed --clean --strip `
         --name "SVA_${{env.VERSION}}.exe" `
         --icon "icone.ico" `
@@ -63,16 +55,29 @@ jobs:
         --add-data "logo.png;." `
         --add-data "logo2.png;." `
         --add-data "SVA;SVA" `
-        --hidden-import "matplotlib.backends.backend_qtquick" `
+        # [FIXADO] Lista de hidden-imports corrigida e expandida para ultralytics, PySide e matplotlib
+        --hidden-import "ultralytics" `
+        --hidden-import "ultralytics.utils" `
+        --hidden-import "ultralytics.engine.model" `
+        --hidden-import "ultralytics.models.yolo" `
+        --hidden-import "ultralytics.data" `
+        --hidden-import "pandas" `
+        --hidden-import "scipy" `
+        --hidden-import "scipy.signal" `
+        --hidden-import "pytz" `
+        --hidden-import "tqdm" `
+        --hidden-import "cv2" `
         --hidden-import "matplotlib.backends.backend_qtagg" `
-        --hidden-import "ultralytics --no-deps" `
+        --hidden-import "PySide6.QtCore" `
+        --hidden-import "PySide6.QtGui" `
+        --hidden-import "PySide6.QtWidgets" `
+        --hidden-import "PySide6.QtNetwork" `
         SVA_15.6.py
 
     - name: ⬆️ Upload executable artifact
       uses: actions/upload-artifact@v4
       with:
         name: SVA_${{env.VERSION}}
-        # CORREÇÃO: Caminho do arquivo usa o nome dinâmico
         path: dist/SVA_${{env.VERSION}}.exe
 
     - name: 🏷️ Create GitHub Release Tag
@@ -83,19 +88,19 @@ jobs:
     - name: 🚀 Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        overwrite: true
+
         tag_name: ${{env.RELEASE_TAG}}
         name: "SVA_${{env.VERSION}}"
         body: |
           Automatic release of Seed Vision Analyzer version ${{env.VERSION}}.
-          Includes improvements in startup speed and UI corrections.
         draft: false
         prerelease: false
-        # CORREÇÃO CRÍTICA: Adiciona o best.pt na Release junto com o EXE
+        # ATENÇÃO: Verifique se 'Train_Model_Seeds_11' é um arquivo.
+        # Se for um diretório, esta ação pode falhar.
         files: |
           dist/SVA_${{env.VERSION}}.exe
-          SVA/best.pt
-          SVA_15.6.py
-          Train_Model_Seeds_11
+          SVA\best.pt
+          SVA\SVA_15.6.py
+
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
