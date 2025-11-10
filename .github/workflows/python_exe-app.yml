@@ -86,7 +86,7 @@ jobs:
       shell: powershell
 
     - name: 🚀 Create GitHub Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v1 # <-- CORREÇÃO AQUI
       with:
         tag_name: ${{env.RELEASE_TAG}}
         name: "SVA_${{env.VERSION}}"
@@ -94,9 +94,7 @@ jobs:
           Automatic release of Seed Vision Analyzer version ${{env.VERSION}}.
         draft: false
         prerelease: false
-        # ATENÇÃO: Verifique se 'Train_Model_Seeds_11' é um arquivo.
-        # Se for um diretório, esta ação pode falhar.
-        overwrite: true
+        overwrite: true # Este parâmetro agora vai funcionar com a v1
         files: |
           dist/SVA_${{env.VERSION}}.exe
           SVA/best.pt
