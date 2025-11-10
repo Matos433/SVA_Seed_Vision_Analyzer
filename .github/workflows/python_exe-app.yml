@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Permite execução manual
+  workflow_dispatch: # Permite execução manual novo teste
 
 jobs:
   build:
@@ -57,7 +57,6 @@ jobs:
 
         # CORREÇÃO DE OTIMIZAÇÃO: Adicionado --clean e --strip
         pyinstaller --noconfirm --onefile --windowed --clean --strip `
-        --collect-all PySide6 `
         --name "SVA_${{env.VERSION}}.exe" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
@@ -84,19 +83,19 @@ jobs:
     - name: 🚀 Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        # Revertendo a alteração: 'prerelease: false' garante que não seja uma pré-release.
-        # O GitHub marca automaticamente a Release mais recente (não pré-release) como "Latest".
+        overwrite: true
         tag_name: ${{env.RELEASE_TAG}}
         name: "SVA_${{env.VERSION}}"
         body: |
           Automatic release of Seed Vision Analyzer version ${{env.VERSION}}.
           Includes improvements in startup speed and UI corrections.
         draft: false
-        prerelease: false # Alterado de volta para false
+        prerelease: false
         # CORREÇÃO CRÍTICA: Adiciona o best.pt na Release junto com o EXE
         files: |
           dist/SVA_${{env.VERSION}}.exe
           SVA/best.pt
           SVA_15.6.py
+          Train_Model_Seeds_11
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
