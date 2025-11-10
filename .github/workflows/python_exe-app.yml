@@ -58,7 +58,7 @@ jobs:
         # CORREÇÃO DE OTIMIZAÇÃO: Adicionado --clean e --strip
         pyinstaller --noconfirm --onedir --windowed --clean --strip `
         
-        --name "SVA_${{env.VERSION}}.exe" `
+        --name "SVA_${{env.VERSION}}" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
         --add-data "logo.png;." `
