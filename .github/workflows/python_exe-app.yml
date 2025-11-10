@@ -86,9 +86,8 @@ jobs:
       shell: powershell
 
     - name: 🚀 Create GitHub Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
-
         tag_name: ${{env.RELEASE_TAG}}
         name: "SVA_${{env.VERSION}}"
         body: |
@@ -97,9 +96,11 @@ jobs:
         prerelease: false
         # ATENÇÃO: Verifique se 'Train_Model_Seeds_11' é um arquivo.
         # Se for um diretório, esta ação pode falhar.
+        overwrite: true
         files: |
           dist/SVA_${{env.VERSION}}.exe
           SVA/best.pt
+          SVA_15.6.py
 
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
