@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch: # Permite execução manual novo teste
+  workflow_dispatch: # Permite execução manual novo teste,m ,1
 
 jobs:
   build:
