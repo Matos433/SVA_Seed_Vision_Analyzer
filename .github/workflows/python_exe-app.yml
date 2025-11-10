@@ -58,7 +58,7 @@ jobs:
         # CORREÇÃO DE OTIMIZAÇÃO: Adicionado --clean e --strip
         pyinstaller --noconfirm --onedir --windowed --clean --strip `
         
-        --name "SVA_${{env.VERSION}}" `
+        --name "SVA_${{env.VERSION}}.exe" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
         --add-data "logo.png;." `
@@ -74,7 +74,7 @@ jobs:
       with:
         name: SVA_${{env.VERSION}}
         # CORREÇÃO: Caminho do arquivo usa o nome dinâmico
-        path: dist/SVA_${{env.VERSION}}
+        path: dist/SVA_${{env.VERSION}}/**
 
     - name: 🏷️ Create GitHub Release Tag
       id: create_tag
