@@ -98,7 +98,6 @@ jobs:
         files: |
           dist/SVA_${{env.VERSION}}.exe
           SVA/best.pt
-          SVA_15.6.py
 
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
