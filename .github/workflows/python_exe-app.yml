@@ -46,10 +46,9 @@ jobs:
       
     - name: 📦 Build executable with PyInstaller
       run: |
-        # [FIXADO] Removida a instalação duplicada do ultralytics daqui.
-
+        # ... (outras flags)
         pyinstaller --noconfirm --onedir --windowed --clean --debug=all \
-        --name "SVA_${{env.VERSION}}.exe" \
+        --name "SVA_${{env.VERSION}}" \
         --icon "icone.ico" \
         --add-data "icone.ico;." \
         --add-data "logo.png;." \
