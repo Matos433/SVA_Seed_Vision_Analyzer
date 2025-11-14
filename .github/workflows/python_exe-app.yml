@@ -46,31 +46,30 @@ jobs:
       
     - name: 📦 Build executable with PyInstaller
       run: |
-        # ... (outras flags)
-        pyinstaller --noconfirm --onedir --windowed --debug=all \
-        --name "SVA_${{env.VERSION}}" \
-        --icon "icone.ico" \
-        --add-data "icone.ico;." \
-        --add-data "logo.png;." \
-        --add-data "logo2.png;." \
-        --add-data "SVA;SVA" \
-        --hidden-import "ultralytics" \
-        --hidden-import "ultralytics.utils" \
-        --hidden-import "ultralytics.engine.model" \
-        --hidden-import "ultralytics.models.yolo" \
-        --hidden-import "ultralytics.data" \
-        --hidden-import "pandas" \
-        --hidden-import "scipy" \
-        --hidden-import "scipy.signal" \
-        --hidden-import "pytz" \
-        --hidden-import "tqdm" \
-        --hidden-import "cv2" \
-        --hidden-import "matplotlib.backends.backend_qtagg" \
-        --hidden-import "PySide6.QtCore" \
-        --hidden-import "PySide6.QtGui" \
-        --hidden-import "PySide6.QtWidgets" \
-        --hidden-import "PySide6.QtNetwork" \
-        --collect-all PySide6 \
+        pyinstaller --noconfirm --onedir --windowed --clean --debug=all `
+        --name "SVA_${{env.VERSION}}" `
+        --icon "icone.ico" `
+        --add-data "icone.ico;." `
+        --add-data "logo.png;." `
+        --add-data "logo2.png;." `
+        --add-data "SVA;SVA" `
+        --hidden-import "ultralytics" `
+        --hidden-import "ultralytics.utils" `
+        --hidden-import "ultralytics.engine.model" `
+        --hidden-import "ultralytics.models.yolo" `
+        --hidden-import "ultralytics.data" `
+        --hidden-import "pandas" `
+        --hidden-import "scipy" `
+        --hidden-import "scipy.signal" `
+        --hidden-import "pytz" `
+        --hidden-import "tqdm" `
+        --hidden-import "cv2" `
+        --hidden-import "matplotlib.backends.backend_qtagg" `
+        --hidden-import "PySide6.QtCore" `
+        --hidden-import "PySide6.QtGui" `
+        --hidden-import "PySide6.QtWidgets" `
+        --hidden-import "PySide6.QtNetwork" `
+        --collect-all PySide6 `
         SVA_15.6.py
 
     - name: 📦 Compress executable folder
