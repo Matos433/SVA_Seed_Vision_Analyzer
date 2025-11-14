@@ -86,7 +86,7 @@ jobs:
       shell: powershell
 
     - name: 🚀 Create GitHub Release
-      uses: softprops/action-gh-release@v1 # <-- CORREÇÃO AQUI
+      uses: softprops/action-gh-release@v2 # <-- CORREÇÃO AQUI
       with:
         tag_name: ${{env.RELEASE_TAG}}
         name: "SVA_${{env.VERSION}}"
