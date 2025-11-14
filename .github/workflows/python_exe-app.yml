@@ -48,7 +48,7 @@ jobs:
       run: |
         # [FIXADO] Removida a instalação duplicada do ultralytics daqui.
 
-        pyinstaller --noconfirm --onefile --windowed --clean --debug=all \
+        pyinstaller --noconfirm --onedir --windowed --clean --debug=all \
         --name "SVA_${{env.VERSION}}.exe" \
         --icon "icone.ico" \
         --add-data "icone.ico;." \
@@ -71,14 +71,24 @@ jobs:
         --hidden-import "PySide6.QtGui" \
         --hidden-import "PySide6.QtWidgets" \
         --hidden-import "PySide6.QtNetwork" \
+        --collect-all PySide6 \
         SVA_15.6.py
       shell: bash
+
+    - name: 📦 Compress executable folder
+      run: |
+        # O nome da pasta gerada pelo --onedir é o mesmo do --name
+        $folderName = "SVA_${{env.VERSION}}"
+        $zipFileName = "${folderName}.zip"
+        # Comprime a pasta em um arquivo ZIP
+        Compress-Archive -Path "dist\$folderName" -DestinationPath "dist\$zipFileName"
+      shell: powershell
 
     - name: ⬆️ Upload executable artifact
       uses: actions/upload-artifact@v4
       with:
         name: SVA_${{env.VERSION}}
-        path: dist/SVA_${{env.VERSION}}.exe
+        path: dist/SVA_${{env.VERSION}}.zip
 
     - name: 🏷️ Create GitHub Release Tag
       id: create_tag
@@ -96,7 +106,7 @@ jobs:
         prerelease: false
         overwrite: true
         files: |
-          dist/SVA_${{env.VERSION}}.exe
+          dist/SVA_${{env.VERSION}}.zip
           SVA/best.pt
 
       env:
