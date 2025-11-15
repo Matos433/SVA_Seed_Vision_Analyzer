@@ -25,9 +25,12 @@ jobs:
     - name: 🔎 Extract version from SVA_15.6.py
       id: extract_version
       run: |
-        $version = (Get-Content SVA_15.6.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups.Value })
+        $versionLine = Get-Content SVA_15.6.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"'
+        $version = $versionLine.Matches.Groups[1].Value
+        echo "Extracted version: $version"
         echo "VERSION=$version" >> $env:GITHUB_ENV
       shell: powershell
+
 
     - name: ⚙️ Install dependencies
       run: |
