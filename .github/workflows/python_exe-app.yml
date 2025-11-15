@@ -1,4 +1,4 @@
-# Version 1.3 - Workflow para SVA (Seed Vision Analyzer) - Corrigido
+# Version 1.4 - Workflow para SVA (Seed Vision Analyzer) - Corrigido
 name: Build SVA Executable and Release
 
 on:
@@ -40,7 +40,9 @@ jobs:
       
     - name: 📦 Build executable with PyInstaller
       run: |
-        pyinstaller --noconfirm --onedir --windowed --clean --debug=all `
+        pyinstaller --noconfirm --onedir --windowed --clean `
+        --workpath D:/build ` # <-- FIX: Define um caminho de build curto
+        --distpath D:/dist ` # <-- FIX: Define um caminho de distribuição curto
         --name "SVA_${{env.VERSION}}" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
@@ -72,14 +74,15 @@ jobs:
       run: |
         $folderName = "SVA_${{env.VERSION}}"
         $zipFileName = "${folderName}.zip"
-        Compress-Archive -Path "dist\$folderName" -DestinationPath "dist\$zipFileName"
+        # Comprime a pasta do novo local de distribuição (D:/dist)
+        Compress-Archive -Path "D:/dist/$folderName" -DestinationPath "D:/dist/$zipFileName"
       shell: powershell
 
     - name: ⬆️ Upload executable artifact
       uses: actions/upload-artifact@v4
       with:
         name: SVA_${{env.VERSION}}
-        path: dist/SVA_${{env.VERSION}}.zip
+        path: D:/dist/SVA_${{env.VERSION}}.zip # <-- FIX: Caminho do artefato atualizado
 
     - name: 🏷️ Create GitHub Release Tag
       id: create_tag
@@ -97,7 +100,7 @@ jobs:
         prerelease: false
         overwrite: true
         files: |
-          dist/SVA_${{env.VERSION}}.zip
+          D:/dist/SVA_${{env.VERSION}}.zip # <-- FIX: Caminho do arquivo para release atualizado
           SVA/best.pt
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
