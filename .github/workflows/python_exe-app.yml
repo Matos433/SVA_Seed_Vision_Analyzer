@@ -1,4 +1,4 @@
-# Version 1.1 - Workflow para SVA (Seed Vision Analyzer) - Corrigido
+# Version 1.2 - Workflow para SVA (Seed Vision Analyzer) - Corrigido
 name: Build SVA Executable and Release
 
 on:
@@ -70,6 +70,7 @@ jobs:
         --hidden-import "PySide6.QtWidgets" `
         --hidden-import "PySide6.QtNetwork" `
         --collect-all PySide6 `
+        --exclude-module PySide6.QtWebEngineCore ` # <-- FIX APLICADO AQUI
         SVA_15.6.py
 
     - name: 📦 Compress executable folder
@@ -93,7 +94,7 @@ jobs:
       shell: powershell
 
     - name: 🚀 Create GitHub Release
-      uses: softprops/action-gh-release@v2 # Versão corrigida para suportar overwrite
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{env.RELEASE_TAG}}
         name: "SVA_${{env.VERSION}}"
@@ -105,8 +106,5 @@ jobs:
         files: |
           dist/SVA_${{env.VERSION}}.zip
           SVA/best.pt
-
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-# [FIXADO] Removido o '}' extra que estava aqui.
