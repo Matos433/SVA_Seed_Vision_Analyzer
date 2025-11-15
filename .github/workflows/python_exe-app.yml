@@ -1,4 +1,4 @@
-# Version 1.4 - Workflow para SVA (Seed Vision Analyzer) - Corrigido
+# Version 1.5 - Workflow para SVA (Seed Vision Analyzer) - Corrigido
 name: Build SVA Executable and Release
 
 on:
@@ -25,7 +25,7 @@ jobs:
     - name: 🔎 Extract version from SVA_15.6.py
       id: extract_version
       run: |
-        $version = (Get-Content SVA_15.6.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups[1].Value })
+        $version = (Get-Content SVA_15.6.py | Select-String -Pattern 'CURRENT_VERSION\s*=\s*\"(.*?)\"' | ForEach-Object { $_.Matches.Groups.Value })
         echo "VERSION=$version" >> $env:GITHUB_ENV
       shell: powershell
 
@@ -41,8 +41,8 @@ jobs:
     - name: 📦 Build executable with PyInstaller
       run: |
         pyinstaller --noconfirm --onedir --windowed --clean `
-        --workpath D:/build ` # <-- FIX: Define um caminho de build curto
-        --distpath D:/dist ` # <-- FIX: Define um caminho de distribuição curto
+        --workpath D:/build `
+        --distpath D:/dist `
         --name "SVA_${{env.VERSION}}" `
         --icon "icone.ico" `
         --add-data "icone.ico;." `
@@ -74,7 +74,6 @@ jobs:
       run: |
         $folderName = "SVA_${{env.VERSION}}"
         $zipFileName = "${folderName}.zip"
-        # Comprime a pasta do novo local de distribuição (D:/dist)
         Compress-Archive -Path "D:/dist/$folderName" -DestinationPath "D:/dist/$zipFileName"
       shell: powershell
 
@@ -82,7 +81,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: SVA_${{env.VERSION}}
-        path: D:/dist/SVA_${{env.VERSION}}.zip # <-- FIX: Caminho do artefato atualizado
+        path: D:/dist/SVA_${{env.VERSION}}.zip
 
     - name: 🏷️ Create GitHub Release Tag
       id: create_tag
@@ -100,7 +99,7 @@ jobs:
         prerelease: false
         overwrite: true
         files: |
-          D:/dist/SVA_${{env.VERSION}}.zip # <-- FIX: Caminho do arquivo para release atualizado
+          D:/dist/SVA_${{env.VERSION}}.zip
           SVA/best.pt
       env:
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
