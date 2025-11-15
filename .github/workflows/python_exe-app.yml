@@ -89,7 +89,7 @@ jobs:
       shell: powershell
 
     - name: 🚀 Create GitHub Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v2 #teste
       with:
         tag_name: ${{env.RELEASE_TAG}}
         name: "SVA_${{env.VERSION}}"
