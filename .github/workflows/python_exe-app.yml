@@ -70,7 +70,7 @@ jobs:
         --hidden-import "PySide6.QtNetwork" `
         --collect-all PySide6 `
         --exclude-module PySide6.QtWebEngineCore `
-        SVA_15.6.py
+        SVA_15.7.py
       shell: powershell
 
     - name: 📦 Compress executable folder
